@@ -552,6 +552,7 @@ function handleAction(s,a,pid){
       const ex=s.players.find(p=>p.id===pid);
       if(ex){ if(ex.team!==team){ s.players=s.players.filter(p=>p.id!==pid); s.players.push({id:pid,name,team}); } else ex.name=name; }
       else s.players.push({id:pid,name,team});
+      if(s.autoAdmin && name.toLowerCase()===s.autoAdmin && s.admin===s.host) s.admin=pid;
       return true; }
     case "leave": s.players=s.players.filter(p=>p.id!==pid); return true;
     case "admin": if(!isAdmin) return false; { const p=s.players.find(x=>x.id===a.pid); if(!p) return false; s.admin=p.id; addLog(s,null,`${p.name} is now the admin.`); return true; }
@@ -681,7 +682,7 @@ function hostPeer(code,resume){
   if(!window.Peer){ net.status="Live sync library didn't load. Playing on this device only."; mode="local"; render(); return; }
   net.via="peer"; mode="host"; net.code=code;
   if(!resume||!S||S.code!==code){ S=freshState(code); }
-  saveHost(); location.hash=code;
+  S.host=myId; saveHost(); location.hash=code;
   net.status="Opening your game…"; render();
   const peer=new Peer(PFX+code,peerOpts()); net.peer=peer;
   peer.on("open",()=>{ net.status="Live. Share the link or code."; net.live=true; render(); });
@@ -1190,16 +1191,25 @@ app.addEventListener("input",e=>{ if(e.target.id==="pname") ui.name=e.target.val
 app.addEventListener("toggle",e=>{ if(e.target.id==="logd") ui.logOpen=e.target.open; },true);
 
 // ---------- Boot ----------
-(function boot(){
+setTimeout(function boot(){
   if(hasClaude()){ initDb().then(()=>{ if(!net.db){ mode="none"; render(); } }); ui.tab="team"; }
+  // Always-on host: open ?host=CODE&admin=NAME on a computer. It hosts game CODE and the player
+  // who joins as NAME becomes the admin automatically.
+  let qs=null; try{ qs=new URLSearchParams(location.search); }catch(e){}
+  const hq=qs?(qs.get("host")||"").toUpperCase():"";
+  if(!hasClaude() && /^[A-Z]{4}$/.test(hq)){
+    const h=loadHost(); const same=!!(h&&h.code===hq&&h.v===4); if(same) S=h;
+    hostPeer(hq,same); const an=(qs.get("admin")||"").trim().toLowerCase(); if(an&&S){ S.autoAdmin=an; saveHost(); }
+    ui.tab=S&&S.phase!=="lobby"?"tv":"team"; render(); return;
+  }
   const code=(location.hash||"").replace("#","").toUpperCase();
   if(!hasClaude() && /^[A-Z]{4}$/.test(code)){
     const h=loadHost();
-    if(h&&h.code===code&&h.admin===myId){ S=h; ui.tab="field"; hostPeer(code,true); return; }
+    if(h&&h.code===code&&(h.admin===myId||h.host===myId)){ S=h; ui.tab="field"; hostPeer(code,true); return; }
     ui.code=code;
   }
   render();
-})();
+},0);
 window.__tb={handleAction,needs,resolvePending,freshState,get S(){return S;},whoFor,callerOf,rollerOf};
 // ---------- Safety nets: crash screen, keep-awake, backups, leave warning ----------
 function showCrash(msg){
