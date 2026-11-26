@@ -1,107 +1,260 @@
 (function(){
 "use strict";
-// ---------- Teams & charts (Super Bowl LVII, Feb 12 2023: KC 38, PHI 35) ----------
+// Layout statistics from 30 fan-transcribed 1983 Paydirt team charts (counts per roll, not any one team's chart).
+// AGG[play][roll] = [teams, INC, QT, PEN, INT, F, B, TD, out-of-bounds, median yards]
+const AGG={"LP":{"10":[28,0,0,13,0,0,1,0,1,4.5],"11":[28,0,0,6,0,0,1,0,2,5],"12":[28,0,0,8,0,0,2,0,1,4.0],"13":[28,0,0,6,0,2,1,0,0,3],"14":[28,0,0,8,0,2,2,0,1,3.5],"15":[28,0,0,4,0,0,1,0,0,4],"16":[28,0,0,3,0,2,0,0,0,5],"17":[28,0,0,2,0,0,1,0,3,5],"18":[28,0,0,7,0,0,3,0,0,5.0],"19":[28,0,0,24,0,1,1,0,1,-1.5],"20":[28,0,0,5,0,4,1,0,0,4.0],"21":[28,0,0,2,0,1,1,0,0,4.0],"22":[28,0,0,4,0,1,3,0,1,4.0],"23":[28,0,0,1,0,2,1,0,0,4.0],"24":[28,0,0,0,0,0,1,0,0,4],"25":[28,0,0,0,0,0,1,0,0,5],"26":[28,0,0,3,0,3,2,0,1,2.5],"27":[28,0,0,2,0,2,2,0,0,4.0],"28":[28,0,0,3,0,5,1,0,1,5],"29":[28,0,0,10,0,1,1,0,0,5.0],"30":[28,0,0,2,0,0,1,0,0,4],"31":[28,0,0,3,0,2,2,0,0,3],"32":[28,0,0,1,0,0,0,0,0,4],"33":[28,0,0,0,0,0,3,0,0,4],"34":[28,0,0,0,0,0,1,0,0,4],"35":[28,0,0,0,0,0,0,0,0,4.0],"36":[28,0,0,2,0,0,0,0,0,4.0],"37":[28,0,0,1,0,1,3,0,1,5],"38":[28,0,0,5,0,1,2,0,0,3.5],"39":[28,0,0,5,0,1,2,0,0,6.0]},"OT":{"10":[28,0,0,9,0,1,2,0,0,5.5],"11":[28,0,0,7,0,0,0,0,1,5],"12":[28,0,0,6,0,4,1,0,1,5],"13":[28,0,0,6,0,5,0,0,1,5],"14":[28,0,0,3,0,2,0,0,0,3],"15":[28,0,0,4,0,3,0,0,2,4],"16":[28,0,0,6,0,2,0,0,1,4.5],"17":[28,0,0,2,0,0,0,0,3,5.0],"18":[28,0,0,12,0,0,0,0,0,5.5],"19":[28,0,0,20,0,1,0,0,0,2],"20":[28,0,0,4,0,0,1,0,3,4],"21":[28,0,0,4,0,1,0,0,0,5],"22":[28,0,0,3,0,1,0,0,0,4.0],"23":[28,0,0,3,0,1,2,0,0,4.0],"24":[28,0,0,0,0,0,5,0,1,3],"25":[28,0,0,1,0,0,2,0,1,4],"26":[28,0,0,1,0,1,2,0,1,4.5],"27":[28,0,0,3,0,1,0,0,0,5.0],"28":[28,0,0,3,0,2,1,0,1,3.0],"29":[28,0,0,13,0,2,1,0,1,4.5],"30":[28,0,0,1,0,1,3,0,1,4],"31":[28,0,0,2,0,1,1,0,0,5.0],"32":[28,0,0,1,0,0,3,0,1,4.5],"33":[28,0,0,0,0,0,2,0,1,3.0],"34":[28,0,0,0,0,0,3,0,1,4],"35":[28,0,0,0,0,0,3,0,1,4],"36":[28,0,0,0,0,0,1,0,0,5],"37":[28,0,0,2,0,0,3,0,1,4],"38":[28,0,0,5,0,1,1,0,0,5],"39":[28,0,0,9,0,2,2,0,2,3]},"ER":{"10":[28,0,0,11,0,3,1,0,4,2],"11":[28,0,0,6,0,0,0,0,3,4.5],"12":[28,0,0,6,0,3,1,0,5,5],"13":[28,0,0,6,0,4,3,0,4,3.5],"14":[28,0,0,5,0,1,0,0,6,2.5],"15":[28,0,0,1,0,4,0,0,6,1.5],"16":[28,0,0,4,0,2,0,0,8,5.0],"17":[28,0,0,6,0,2,1,0,4,4],"18":[28,0,0,17,0,1,1,0,3,1],"19":[28,0,0,13,0,3,1,0,2,-5],"20":[28,0,0,8,0,0,1,0,6,3],"21":[28,0,0,4,0,3,1,0,2,3.0],"22":[28,0,0,7,0,2,2,0,6,5],"23":[28,0,0,1,0,1,4,0,9,3.0],"24":[28,0,0,1,0,0,6,0,8,2],"25":[28,0,0,0,0,0,2,0,11,4],"26":[28,0,0,3,0,0,0,0,6,0],"27":[28,0,0,3,0,1,0,0,5,5.0],"28":[28,0,0,5,0,2,1,0,6,5],"29":[28,0,0,11,0,0,1,0,2,5.0],"30":[28,0,0,3,0,1,1,0,5,4],"31":[28,0,0,0,0,3,0,0,4,3.5],"32":[28,0,0,0,0,0,2,0,4,3.0],"33":[28,0,0,0,0,0,7,0,9,2],"34":[28,0,0,0,0,0,7,0,7,3.5],"35":[28,0,0,0,0,0,4,0,6,1.5],"36":[28,0,0,0,0,0,4,0,7,4.0],"37":[28,0,0,1,0,0,3,0,7,5],"38":[28,0,0,8,0,2,1,0,2,3],"39":[28,0,0,10,0,2,1,0,4,2]},"DR":{"10":[28,0,0,13,0,0,1,0,0,5.0],"11":[28,0,0,4,0,1,2,0,0,5],"12":[28,0,0,7,0,0,2,0,0,5],"13":[28,0,0,3,0,3,1,0,0,4],"14":[28,0,0,4,0,0,0,0,0,2.5],"15":[28,0,0,1,0,1,2,0,2,3.5],"16":[28,0,0,5,0,4,0,0,1,4],"17":[28,0,0,5,0,2,0,0,1,5],"18":[28,0,0,13,0,0,1,0,2,6.0],"19":[28,0,0,20,0,2,1,0,1,2],"20":[28,0,0,2,0,4,0,0,0,5.0],"21":[28,0,0,2,0,1,1,0,0,5.0],"22":[28,0,0,3,0,1,3,0,1,4],"23":[28,0,0,2,0,2,0,0,1,2.5],"24":[28,0,0,1,0,0,5,0,0,3.0],"25":[28,0,0,2,0,0,0,0,0,2.0],"26":[28,0,0,2,0,0,2,0,2,4.0],"27":[28,0,0,1,0,3,1,0,1,3],"28":[28,0,0,8,0,1,0,0,1,5],"29":[28,0,0,11,0,1,0,0,1,3.5],"30":[28,0,0,3,0,3,0,0,0,5.0],"31":[28,0,0,2,0,1,4,0,0,3],"32":[28,0,0,0,0,0,0,0,1,4.0],"33":[28,0,0,0,0,0,5,0,0,5],"34":[28,0,0,0,0,0,4,0,0,0.5],"35":[28,0,0,0,0,0,7,0,0,3],"36":[28,0,0,0,0,0,2,0,0,3.5],"37":[28,0,0,1,0,0,4,0,1,4],"38":[28,0,0,8,0,2,1,0,0,3],"39":[28,0,0,6,0,2,1,0,0,4]},"SC":{"10":[28,0,1,13,0,0,0,0,3,16],"11":[28,1,1,7,0,1,0,0,0,16.0],"12":[28,0,1,11,0,0,0,0,3,10],"13":[28,1,0,3,2,3,0,0,5,9],"14":[28,0,0,10,0,1,0,0,0,10],"15":[28,0,0,2,1,4,0,0,6,8.5],"16":[28,0,1,4,0,1,0,0,2,10.5],"17":[28,0,0,6,0,0,0,0,1,12.5],"18":[28,0,1,15,1,0,0,1,1,16.5],"19":[28,0,1,17,1,0,0,0,0,35],"20":[28,0,0,2,0,0,0,0,3,8],"21":[28,1,1,1,1,2,0,0,1,6.0],"22":[28,3,1,4,0,2,0,0,3,7.5],"23":[28,5,0,2,0,1,0,0,3,7.5],"24":[28,7,2,2,0,1,0,0,5,4.0],"25":[28,6,0,1,0,0,0,0,8,6],"26":[28,3,1,1,0,1,0,0,4,6],"27":[28,1,0,2,0,0,0,0,0,8],"28":[28,1,1,3,3,3,0,0,3,11],"29":[28,2,0,10,1,1,0,1,2,22],"30":[28,3,0,2,0,1,0,0,3,8.5],"31":[28,5,2,1,0,1,0,0,3,5],"32":[28,9,0,2,0,0,0,0,2,6],"33":[28,12,0,0,0,0,0,0,6,6],"34":[28,17,0,0,0,0,0,0,4,4],"35":[28,15,1,0,0,0,0,0,1,2.5],"36":[28,6,1,2,0,0,0,0,4,5],"37":[28,2,1,1,0,1,0,0,3,8],"38":[28,0,0,5,1,2,0,0,1,10.5],"39":[28,0,4,6,1,0,0,0,0,18]},"SP":{"10":[28,0,0,19,0,0,0,0,0,9],"11":[28,0,1,11,1,0,0,0,1,8],"12":[28,1,2,10,2,0,0,0,1,8],"13":[28,1,1,10,2,2,0,0,0,8.5],"14":[28,0,0,9,0,0,0,0,3,6],"15":[28,0,0,9,2,1,0,0,1,8.5],"16":[28,0,0,6,1,2,0,0,1,8],"17":[28,0,0,10,0,0,0,0,0,7.0],"18":[28,1,0,17,0,0,0,0,2,7.5],"19":[28,0,1,18,5,0,0,1,0,4],"20":[28,0,0,10,0,2,0,0,0,6.5],"21":[28,1,2,6,2,2,0,0,1,8],"22":[28,4,1,2,1,3,0,0,1,8],"23":[28,7,1,2,0,0,0,0,0,9.0],"24":[28,12,2,1,0,0,0,0,0,6],"25":[28,9,2,2,0,0,0,0,0,6],"26":[28,4,0,2,0,2,0,0,0,7.0],"27":[28,3,0,1,0,0,0,0,1,7.5],"28":[28,1,1,4,2,2,0,0,0,10.5],"29":[28,0,1,8,0,0,0,0,1,10],"30":[28,2,0,1,0,1,0,0,0,6.0],"31":[28,4,1,2,0,0,0,0,0,7],"32":[28,8,0,0,0,0,0,0,0,9.0],"33":[28,13,0,0,0,0,0,0,0,5],"34":[28,16,0,0,0,0,0,0,0,6.5],"35":[28,10,3,0,0,0,0,0,0,7],"36":[28,8,1,0,0,0,0,0,0,7],"37":[28,5,4,1,1,0,0,0,0,8],"38":[28,0,2,5,0,0,0,0,2,7],"39":[28,0,1,10,3,2,0,0,1,7.5]},"MP":{"10":[28,0,0,17,1,0,0,0,1,15.0],"11":[28,0,3,8,5,0,0,0,4,13.5],"12":[28,0,3,8,0,0,0,0,1,16],"13":[28,0,1,14,1,2,0,0,2,13.5],"14":[28,0,1,11,2,0,0,0,2,15.0],"15":[28,0,3,9,1,0,0,1,2,15.5],"16":[28,1,2,5,1,0,0,0,4,13],"17":[28,2,1,8,3,0,0,0,2,13.5],"18":[28,1,2,15,2,0,0,0,1,17.5],"19":[28,0,2,22,0,1,0,0,0,17],"20":[28,1,0,6,2,2,0,0,1,15],"21":[28,3,0,4,2,1,0,0,4,13.0],"22":[28,5,3,8,1,1,0,0,1,15.5],"23":[28,6,2,1,2,2,0,0,1,11],"24":[28,14,2,0,0,0,0,0,0,14.0],"25":[28,10,2,1,1,0,0,0,2,12.5],"26":[28,5,2,5,0,0,0,0,1,12.5],"27":[28,2,1,3,0,0,0,0,2,14.5],"28":[28,4,1,2,2,1,0,0,2,14.0],"29":[28,2,0,10,0,0,0,0,3,15.5],"30":[28,1,1,3,3,0,0,0,1,14.0],"31":[28,5,1,3,1,0,0,0,1,15.0],"32":[28,10,0,0,1,0,0,0,3,13],"33":[28,20,0,0,0,0,0,0,1,13.5],"34":[28,22,2,0,0,0,0,0,0,13.5],"35":[28,18,2,0,0,0,0,0,1,16.0],"36":[28,15,3,0,0,0,0,0,1,13.0],"37":[28,6,4,3,1,0,0,0,1,14.0],"38":[28,2,1,7,2,3,0,0,1,16],"39":[28,0,3,5,2,0,0,0,5,15.0]},"LG":{"10":[28,0,1,15,3,0,0,0,2,47],"11":[28,1,1,6,2,0,0,1,4,35],"12":[28,1,2,7,1,1,0,1,1,41],"13":[28,0,4,11,1,0,0,1,4,29],"14":[28,3,7,6,1,0,0,0,1,26],"15":[28,2,5,7,2,1,0,1,2,24.5],"16":[28,3,3,7,2,0,0,0,1,35],"17":[28,2,0,6,2,0,0,1,3,36],"18":[28,1,0,15,2,1,0,3,1,42.5],"19":[28,0,0,22,0,0,0,2,0,52.5],"20":[28,1,1,8,2,0,0,1,4,32],"21":[28,2,5,8,4,0,0,1,3,28.5],"22":[28,3,6,6,1,1,0,1,4,25.0],"23":[28,8,2,7,4,0,0,0,3,24],"24":[28,13,5,3,2,0,0,0,2,26],"25":[28,12,4,2,0,0,0,2,4,28.0],"26":[28,7,5,2,3,0,0,0,3,27],"27":[28,7,4,1,1,0,0,0,3,31],"28":[28,3,1,2,2,1,0,2,3,33],"29":[28,3,1,6,2,0,0,1,2,44],"30":[28,15,2,2,2,1,0,1,1,25],"31":[28,20,3,2,0,0,0,0,1,26],"32":[28,23,0,0,3,0,0,0,1,62.5],"33":[28,23,2,0,0,0,0,0,2,29],"34":[28,19,3,0,0,0,0,0,2,45.0],"35":[28,18,7,1,0,0,0,0,0,34.0],"36":[28,16,6,0,1,0,0,0,4,25],"37":[28,11,5,3,0,0,0,0,3,26],"38":[28,9,1,9,1,0,0,2,0,34.5],"39":[28,3,4,9,0,0,0,1,2,40]},"SL":{"10":[28,1,1,16,0,0,0,1,4,23],"11":[28,1,1,10,1,0,0,0,7,12],"12":[28,1,2,9,1,4,0,0,5,16],"13":[28,2,3,2,0,2,0,0,9,13],"14":[28,3,0,3,1,0,0,0,13,12.0],"15":[28,4,0,5,1,0,0,0,9,13.5],"16":[28,3,0,7,0,1,0,0,7,15],"17":[28,0,3,8,2,1,0,0,4,9.5],"18":[28,0,0,17,1,0,0,0,4,32.0],"19":[28,0,1,21,0,0,0,0,4,23.5],"20":[28,2,1,7,2,0,0,0,7,16.0],"21":[28,3,0,6,2,0,0,0,6,12],"22":[28,5,2,5,2,0,0,0,6,14.5],"23":[28,5,4,2,0,1,0,0,8,8.0],"24":[28,7,3,2,0,0,0,0,9,13.0],"25":[28,7,2,2,0,0,0,0,8,7],"26":[28,5,1,4,0,1,0,0,7,13],"27":[28,4,1,5,1,1,0,0,4,13.5],"28":[28,1,0,8,1,1,0,0,7,17],"29":[28,2,1,8,1,0,0,0,8,13.0],"30":[28,11,2,2,0,0,0,0,4,9],"31":[28,12,1,2,0,0,0,0,5,11],"32":[28,14,3,2,1,1,0,0,0,9],"33":[28,18,0,1,0,0,0,0,4,10],"34":[28,20,0,0,0,0,0,0,4,8.0],"35":[28,21,1,0,0,0,0,0,5,11.5],"36":[28,17,1,0,0,0,0,0,6,7.0],"37":[28,10,2,4,1,0,0,0,10,8],"38":[28,6,1,4,3,3,0,0,5,15],"39":[28,2,2,12,3,0,0,0,5,5]}};
+// Typical defense box per formation+dice+play (entries most 1983 charts share; blank cells left out).
+const DEFT={"A1DR":["p",1],"A1MP":["n",-4],"A1LG":["INC",null],"A2DR":["p",1],"A2SC":["p",0],"A2MP":["n",-2],"A2LG":["n",-10],"A3LP":["n",1],"A3OT":["n",4],"A3ER":["n",1],"A3DR":["p",1],"A3SC":["p",1],"A3SP":["n",-1],"A3MP":["p",8],"A3LG":["n",-14],"A4SC":["n",-4],"A4MP":["n",-10],"A4LG":["n",-16],"A4SL":["n",-10],"A5SC":["INC",null],"A5MP":["p",29],"A5LG":["INT",28],"A5SL":["INC",null],"B1LP":["p",1],"B1OT":["p",1],"B1DR":["p",0],"B1MP":["p",16],"B2LP":["p",1],"B2OT":["p",1],"B2DR":["p",0],"B3LP":["p",1],"B3OT":["p",1],"B3ER":["n",-1],"B3DR":["n",-2],"B3SP":["n",1],"B3LG":["n",-2],"B4LP":["p",1],"B4OT":["p",1],"B4SC":["n",-5],"B4MP":["p",22],"B4LG":["p",28],"B5ER":["p",1],"B5SC":["n",2],"B5MP":["p",28],"B5LG":["pTD",null],"B5SL":["p",21],"C1ER":["p",1],"C1SC":["n",-6],"C1SL":["INC",null],"C2ER":["p",1],"C2SC":["n",-2],"C2SP":["n",-4],"C2LG":["n",-9],"C2SL":["n",-6],"C3LP":["n",3],"C3ER":["p",1],"C3SP":["n",-3],"C3MP":["p",7],"C3LG":["INC",null],"C3SL":["n",-6],"C4SP":["n",-5],"C4LG":["n",-16],"C4SL":["n",-8],"C5SC":["p",-3],"C5SP":["n",-5],"C5MP":["p",18],"C5LG":["p",43],"C5SL":["INT",12],"D1LP":["n",3],"D1OT":["n",2],"D1SP":["p",3],"D1MP":["n",-6],"D1LG":["INC",null],"D1SL":["p",10],"D2LP":["n",1],"D2OT":["n",1],"D2SP":["p",2],"D2MP":["n",-8],"D3LP":["n",1],"D3OT":["n",2],"D3ER":["n",2],"D3DR":["n",2],"D3SP":["p",0],"D3MP":["INC",null],"D3LG":["n",-12],"D3SL":["p",6],"D4DR":["p",8],"D4SC":["n",-3],"D4SP":["n",-4],"D4MP":["n",-10],"D4LG":["n",-20],"D4SL":["n",-9],"D5SP":["INC",null],"D5MP":["INT",14],"D5LG":["p",28],"D5SL":["n",-7],"E1LP":["n",4],"E1DR":["n",5],"E1LG":["INC",null],"E1SL":["p",9],"E2LP":["n",1],"E2OT":["n",2],"E2DR":["n",2],"E2LG":["INC",null],"E3LP":["n",1],"E3OT":["n",1],"E3DR":["n",2],"E3MP":["n",-2],"E3LG":["INT",32],"E4DR":["n",3],"E4MP":["n",-10],"E4LG":["INT",30],"E4SL":["p",14],"E5DR":["n",2],"E5SP":["p",16],"E5MP":["p",20],"E5LG":["INT",33],"E5SL":["n",-3],"F1LP":["n",-2],"F1ER":["n",0],"F1DR":["n",-2],"F1SC":["n",5],"F1SP":["n",2],"F1MP":["QT",null],"F1LG":["QT",null],"F1SL":["QT",null],"F2OT":["n",-3],"F2ER":["n",-2],"F2DR":["n",0],"F2SC":["n",11],"F2MP":["QT",null],"F2LG":["QT",null],"F3LP":["p",0],"F3ER":["n",-2],"F3DR":["n",6],"F3SC":["n",4],"F3SP":["n",-2],"F3MP":["QT",null],"F3LG":["QT",null],"F3SL":["QT",null],"F4ER":["n",2],"F4DR":["n",3],"F4SC":["n",8],"F4SP":["p",16],"F4MP":["INT",14],"F4LG":["QT",null],"F4SL":["n",-10],"F5LP":["n",-2],"F5ER":["n",-10],"F5DR":["n",3],"F5SC":["pTD",null],"F5SP":["pTD",null],"F5MP":["INT",14],"F5LG":["pTD",null],"F5SL":["pTD",null]};
+// ---------- Teams (Super Bowl LVII, Feb 12 2023: KC 38, PHI 35) ----------
 const TEAMS = {
   KC:{key:"KC",name:"Chiefs",city:"Kansas City",short:"KC",color:"var(--kc)",cls:"kc",
       blurb:"Mahomes on a bad ankle, Kelce underneath, a 65-yard Toney punt return, and the late Butker field goal."},
   PHI:{key:"PHI",name:"Eagles",city:"Philadelphia",short:"PHI",color:"var(--phi)",cls:"phi",
       blurb:"Jalen Hurts ran for 70 yards and 3 TDs and threw for 304. Outgained KC 417 to 340 and owned the clock."}
 };
-// Offensive plays. lo/hi = yard range per tens tier (10s, 20s, 30s). inc = ones value below which a pass falls incomplete.
-const PLAYS = {
-  RI:{name:"Inside Run",cat:"run",desc:"Between the tackles",lo:[-3,1,4],hi:[3,7,14],inc:[-1,-1,-1],turn:[10]},
-  RO:{name:"Outside Run",cat:"run",desc:"Sweep / toss to the edge",lo:[-4,0,5],hi:[2,9,25],inc:[-1,-1,-1],turn:[10]},
-  DR:{name:"Draw",cat:"run",desc:"Fake pass, hand off late",lo:[-2,1,4],hi:[3,8,18],inc:[-1,-1,-1],turn:[10]},
-  QB:{name:"QB Sneak",cat:"sneak",desc:"Short yardage push",lo:[0,1,2],hi:[2,3,6],inc:[-1,-1,-1],turn:[]},
-  SC:{name:"Screen",cat:"pass",desc:"Dump-off behind the rush",lo:[-4,0,5],hi:[3,10,30],inc:[3,1,0],turn:[10]},
-  SP:{name:"Short Pass",cat:"pass",desc:"Quick slant / out",lo:[0,4,6],hi:[6,10,16],inc:[5,3,1],turn:[10]},
-  MP:{name:"Medium Pass",cat:"pass",desc:"Dig / seam, 10–20 yards",lo:[8,10,14],hi:[14,20,28],inc:[8,5,2],turn:[10,11]},
-  LP:{name:"Long Bomb",cat:"pass",desc:"Go route, high risk",lo:[35,25,30],hi:[35,45,60],inc:[10,8,4],turn:[10,11,12]},
-  PA:{name:"Play Action",cat:"pass",desc:"Fake run, throw deep-ish",lo:[5,8,15],hi:[12,20,40],inc:[7,4,2],turn:[10]},
-  SL:{name:"Sideline Pass",cat:"pass",desc:"Catch and step out. Stops the clock",lo:[0,3,5],hi:[5,9,14],inc:[6,4,2],turn:[10]}
-};
-const OFF_ORDER=["RI","RO","DR","QB","SC","SP","SL","MP","LP","PA"];
-const DEFS = {
-  RS:{name:"Run Stuff",desc:"8 in the box"},
-  BA:{name:"Base 4-3",desc:"Balanced"},
-  NI:{name:"Nickel",desc:"Extra DB, short zones"},
-  PR:{name:"Prevent",desc:"Deep safeties, give up short"},
-  BL:{name:"Blitz",desc:"Send 6, risky"}
-};
-const DEF_ORDER=["RS","BA","NI","PR","BL"];
-// Matchup grid from the offense's view: + helps offense, - helps defense. Each point = 2 yards.
-const GRID = {
-  RI:{RS:-2,BA:-1,NI:1,PR:2,BL:0},
-  RO:{RS:-1,BA:0,NI:1,PR:2,BL:1},
-  DR:{RS:-1,BA:0,NI:0,PR:2,BL:2},
-  QB:{RS:-2,BA:-1,NI:0,PR:1,BL:-1},
-  SC:{RS:1,BA:0,NI:-1,PR:1,BL:2},
-  SP:{RS:1,BA:0,NI:-2,PR:0,BL:-1},
-  MP:{RS:2,BA:0,NI:-1,PR:-2,BL:0},
-  LP:{RS:2,BA:1,NI:0,PR:-2,BL:1},
-  PA:{RS:2,BA:0,NI:0,PR:-2,BL:-1},
-  SL:{RS:1,BA:0,NI:-2,PR:1,BL:-1}
-};
-// Team ratings per play (-1..+1): adds 2 yards per point and makes passes complete more often.
-const RATE = {
-  KC:{RI:0,RO:0,DR:1,QB:0,SC:1,SP:1,SL:1,MP:1,LP:0,PA:0},
-  PHI:{RI:1,RO:1,DR:0,QB:1,SC:0,SP:0,SL:0,MP:0,LP:1,PA:1}
-};
-// Defense bonus (adds to defense roll) per formation.
-const DEFRATE = {KC:{RS:1,BA:0,NI:0,PR:0,BL:0}, PHI:{RS:0,BA:0,NI:0,PR:0,BL:1}};
 
-// ---------- Dice ----------
+// ---------- Paydirt dice ----------
+// Offense: BLACK die (tens) + two WHITE dice (ones). Defense: RED + GREEN.
+// Faces below are what each die's 1-6 face reads as, so normal dice give the exact Paydirt odds.
+const BLACK=[1,2,2,3,3,3], WHITE=[0,1,2,3,4,5], BLUE=[0,0,1,2,3,4], RED=[1,1,1,2,2,3], GREEN=[0,0,0,0,1,2];
 const d6=()=>1+Math.floor(Math.random()*6);
-const tensOf=f=>Math.ceil(f/2);          // 1-2 -> 1 (10s), 3-4 -> 2 (20s), 5-6 -> 3 (30s)
-const offValue=(t,a,b)=>tensOf(t)*10+(a-1)+(b-1); // 10..40, same odds as the classic black + two white dice
-function defAdj(D){return D<=4?2:D<=6?1:D<=8?0:D<=10?-1:-2;}
+const tensOf=f=>BLACK[f-1];
+const offValue=(t,a,b)=>BLACK[t-1]*10+WHITE[a-1]+BLUE[b-1];   // 10..39
+const defValue=(r,g)=>RED[r-1]+GREEN[g-1];                       // 1..5
+const OFFP={}; for(let t=1;t<=6;t++)for(let a=1;a<=6;a++)for(let b=1;b<=6;b++){const R=offValue(t,a,b);OFFP[R]=(OFFP[R]||0)+1;}
+const DEFP={}; for(let r=1;r<=6;r++)for(let g=1;g<=6;g++){const D=defValue(r,g);DEFP[D]=(DEFP[D]||0)+1;}
+const ROLLS=[]; for(let R=10;R<=39;R++) ROLLS.push(R);
 
-// Raw chart cell for a team/play/roll, before the defense.
-function cell(team,pk,R){
-  const p=PLAYS[pk]; const t=Math.min(3,Math.floor(R/10));
-  const ones=R-t*10; const r=RATE[team][pk]||0;
-  if(pk!=="QB"){
-    if(R===20) return {k:"pen",y:-10,txt:"Holding on the offense, 10 yards back"};
-    if(R===30) return {k:"pen",y:15,txt:"Pass interference / face mask on the defense, 15 yards and a first down",fd:true};
-  }
-  if(p.turn.includes(R)) return {k:p.cat==="run"?"fum":"int"};
-  if(R>=39) return {k:"yds",y:p.cat==="run"?35:p.cat==="sneak"?8:pk==="LP"?65:45,brk:true};
-  const ti=t-1;
-  if(p.cat==="pass" && ones < (p.inc[ti]-r)) return {k:"inc"};
-  if(pk==="LP" && t===1 && ones<10) return {k:"inc"};
-  const y=Math.round(p.lo[ti]+(p.hi[ti]-p.lo[ti])*ones/10)+2*r;
-  return {k:"yds",y};
-}
+// ---------- Plays (Paydirt's nine) and defenses (A-F) ----------
+const PLAYS = {
+  LP:{n:1,name:"Line Plunge",cat:"run",desc:"Straight ahead, short yardage"},
+  OT:{n:2,name:"Off Tackle",cat:"run",desc:"Power run off the tackle"},
+  ER:{n:3,name:"End Run",cat:"run",desc:"Sweep to the edge"},
+  DR:{n:4,name:"Draw",cat:"run",desc:"Fake pass, hand off late"},
+  SC:{n:5,name:"Screen",cat:"pass",desc:"Dump-off behind the rush"},
+  SP:{n:6,name:"Short Pass",cat:"pass",desc:"Quick slant / out"},
+  MP:{n:7,name:"Medium Pass",cat:"pass",desc:"Dig / seam, 10–20 yards"},
+  LG:{n:8,name:"Long Pass",cat:"pass",desc:"Go route, high risk"},
+  SL:{n:9,name:"Sideline Pass",cat:"pass",desc:"Catch and step out"}
+};
+const OFF_ORDER=["LP","OT","ER","DR","SC","SP","MP","LG","SL"];
+const DEFS = {
+  A:{name:"A · Standard",short:"A",desc:"Balanced 4-3. No big holes, no wall"},
+  B:{name:"B · Short Yardage",short:"B",desc:"Stack the box. Stops plunges and off tackle; weak deep"},
+  C:{name:"C · Spread",short:"C",desc:"Spread out. Stops end runs and screens; soft inside"},
+  D:{name:"D · Short Pass",short:"D",desc:"Underneath zones. Stops short and sideline passes"},
+  E:{name:"E · Long Pass",short:"E",desc:"Prevent. Stops the long pass; gives up draws and runs"},
+  F:{name:"F · Blitz",short:"F",desc:"Send the house. Sacks deep drops, stuffs inside runs; screens and draws beat it, and it can get burned deep"}
+};
+const DEF_ORDER=["A","B","C","D","E","F"];
+// Matchup from the offense's view: + = defense guessed wrong, - = defense guessed right.
+const GRID = {
+  LP:{A:0,B:-2,C:1,D:1,E:2,F:-1},
+  OT:{A:0,B:-2,C:1,D:1,E:2,F:-1},
+  ER:{A:0,B:-1,C:-2,D:1,E:1,F:1},
+  DR:{A:0,B:-1,C:1,D:1,E:2,F:2},
+  SC:{A:0,B:1,C:-1,D:-1,E:1,F:2},
+  SP:{A:0,B:1,C:0,D:-2,E:0,F:-1},
+  MP:{A:0,B:1,C:0,D:-1,E:-1,F:0},
+  LG:{A:0,B:2,C:0,D:1,E:-2,F:1},
+  SL:{A:0,B:1,C:-1,D:-2,E:-1,F:-1}
+};
+// Team strengths (★): better odds on these plays.
+const RATE = {
+  KC:{LP:0,OT:0,ER:0,DR:1,SC:1,SP:1,MP:1,LG:0,SL:1},
+  PHI:{LP:1,OT:0,ER:0,DR:0,SC:0,SP:1,MP:1,LG:1,SL:0}
+};
+const DEFRATE = {KC:{A:0,B:0,C:0,D:1,E:0,F:0}, PHI:{A:0,B:0,C:0,D:0,E:0,F:1}};
 
-// Full resolution of a scrimmage play.
-function resolveScrimmage(team,pk,dk,dice){
-  const def=other(team);
-  const R=offValue(dice.t,dice.a,dice.b);
-  let D=dice.d1+dice.d2+(DEFRATE[def][dk]||0); if(D>12)D=12;
-  const p=PLAYS[pk]; const M=GRID[pk][dk];
-  const c=cell(team,pk,R);
-  const out={R,D,M,base:c,kind:c.k,y:0,txt:"",fd:!!c.fd};
-  if(c.k==="pen"){out.y=c.y;out.txt=c.txt;out.pen=true;return out;}
-  if(c.k==="fum"||c.k==="int"){out.txt=c.k==="int"?"Intercepted!":"Fumble! Defense recovers.";return out;}
-  if(c.k==="inc"){
-    if(dk==="BL" && p.cat==="pass" && D>=10){out.kind="yds";out.y=-7;out.txt="Sacked on the blitz";out.sack=true;return out;}
-    out.txt="Incomplete";return out;
-  }
-  // yards cell: apply defense
-  if(D>=12){
-    if(M<0){ out.kind=p.cat==="pass"?"int":"fum"; out.txt=p.cat==="pass"?"Defense read it. Intercepted!":"Big hit, fumble! Defense recovers."; out.scoop=true; return out; }
-    out.y=p.cat==="pass"?-7:-3; out.txt=p.cat==="pass"?"Sacked":"Stuffed in the backfield"; out.sack=p.cat==="pass"; return out;
-  }
-  if(dk==="BL" && p.cat==="pass" && D>=10){out.y=-7;out.txt="Sacked on the blitz";out.sack=true;return out;}
-  const mult=p.cat==="sneak"?1:2;
-  let y=c.y + M*mult + defAdj(D);
-  if(c.brk) y=Math.max(y,c.y);
-  out.y=y;
-  if(D===2 && y<5){out.y=5;out.txt="Defensive offside, 5 free yards";out.pen=true;return out;}
-  out.txt=(p.cat==="pass"?"Complete, ":"")+fmtGain(y)+(c.brk?" Breakaway!":"");
+// ---------- Chart building ----------
+// Turn bands [{p,k,lo,hi}] (worst to best) into one result per roll.
+// Layout rule (keeps each band's real probability exactly):
+//   30s (half of all rolls) hold the everyday middle results, rising from 30 to 39.
+//   20s split: 20-24 sit just below the middle, 25-29 just above it.
+//   10s (rarest) hold the extremes: 10-14 the worst results, 15-19 the best.
+function bandsToRows(rolls,bands){
+  const tot=rolls.reduce((a,R)=>a+OFFP[R],0); const sumP=bands.reduce((a,b)=>a+b.p,0);
+  const grp=R=>{ const t=Math.floor(R/10), lo=(R%10)<5; return t===1?(lo?0:4):t===2?(lo?1:3):2; };
+  const order=rolls.slice().sort((x,y)=>grp(x)-grp(y)||x-y);
+  let acc=0; const mid={}; order.forEach(R=>{ mid[R]=(acc+OFFP[R]/2)/tot; acc+=OFFP[R]; });
+  const out={};
+  rolls.forEach(R=>{ const m=Math.max(0,Math.min(.9999,mid[R]));
+    let c=0, bi=0; for(;bi<bands.length;bi++){ const w=bands[bi].p/sumP; if(m<c+w||bi===bands.length-1) break; c+=w; }
+    const b=bands[bi]; const w=b.p/sumP; const pos=Math.max(0,Math.min(1,(m-c)/w));
+    out[R]={k:b.k, y:b.lo!=null?Math.round(b.lo+(b.hi-b.lo)*pos):undefined};
+  });
   return out;
 }
+// ---------- Where each kind of box goes (from real Paydirt charts) ----------
+// AGG (pdata.js) counts, for every play and roll, how many of the 30 1983 team charts put an
+// incomplete, QT, penalty, interception, fumble, breakaway or TD on that roll. We place each
+// kind of box on the rolls where the real charts most often had it, so the black (incomplete)
+// boxes come in the same long stretches, and penalties land on 19, 29 and 39 like the originals.
+// How often each kind of box comes up (share of all 216 rolls), before team strength.
+const TARGET={
+  LP:{F:2.5,B:1.5,PEN:6}, OT:{F:2.5,B:1.5,PEN:6}, ER:{F:2.5,B:2.5,PEN:6}, DR:{F:2.5,B:1.5,PEN:6},
+  SC:{INT:.9,F:1,QT:2.5,B:2,PEN:6,INC:20}, SP:{INT:1.3,QT:3.5,B:1.5,PEN:6,INC:24},
+  MP:{INT:2,QT:4.5,B:1.5,PEN:6,INC:32}, LG:{TD:1.5,INT:2.8,QT:7,PEN:6,INC:42}, SL:{INT:1.5,QT:4,B:1,PEN:6,INC:30}
+};
+const AGGI={INC:1,QT:2,PEN:3,INT:4,F:5,B:6,TD:7};
+const PLACE_ORDER=["TD","INT","F","QT","B","PEN","INC"];   // rarest first
+// Yard results once the special boxes are placed, worst to best (share of the remaining rolls).
+const BANDS = {
+  LP:[{p:10,lo:-1,hi:0},{p:30,lo:1,hi:2},{p:35,lo:3,hi:4},{p:18,lo:5,hi:7},{p:7,lo:8,hi:12}],
+  OT:[{p:14,lo:-3,hi:-1},{p:24,lo:0,hi:2},{p:36,lo:3,hi:5},{p:18,lo:6,hi:9},{p:8,lo:10,hi:18}],
+  ER:[{p:20,lo:-4,hi:-1},{p:18,lo:0,hi:2},{p:30,lo:3,hi:6},{p:22,lo:7,hi:11},{p:10,lo:13,hi:20}],
+  DR:[{p:16,lo:-2,hi:0},{p:26,lo:1,hi:3},{p:34,lo:4,hi:6},{p:17,lo:7,hi:11},{p:7,lo:12,hi:20}],
+  SC:[{p:18,lo:-3,hi:0},{p:31,lo:1,hi:4},{p:38,lo:5,hi:9},{p:13,lo:10,hi:20}],
+  SP:[{p:37,lo:2,hi:5},{p:36,lo:6,hi:8},{p:27,lo:9,hi:14}],
+  MP:[{p:35,lo:8,hi:12},{p:40,lo:13,hi:17},{p:25,lo:18,hi:26}],
+  LG:[{p:36,lo:20,hi:28},{p:38,lo:29,hi:40},{p:26,lo:41,hi:60}],
+  SL:[{p:35,lo:3,hi:6},{p:42,lo:7,hi:10},{p:23,lo:11,hi:17}]
+};
+function aggOf(pk,R){ return (typeof AGG!=="undefined"&&AGG[pk]&&AGG[pk][R])||[1,0,0,0,0,0,0,0,0,0]; }
+function placeBoxes(pk,team){
+  const r=RATE[team][pk]||0; const t={...TARGET[pk]};
+  if(t.INC) t.INC=Math.max(5,t.INC-4*r);
+  if(t.QT) t.QT*=team==="KC"?.7:1.2;
+  const kind={}; let free=ROLLS.slice();
+  for(const k of PLACE_ORDER){ if(!t[k]) continue;
+    const want=t[k]/100*216;
+    // rolls the real charts used most for this box; ties go to the roll with fewer ways to come up
+    const cand=free.slice().sort((x,y)=>{ const ax=aggOf(pk,x), ay=aggOf(pk,y); return ay[AGGI[k]]/ay[0]-ax[AGGI[k]]/ax[0] || OFFP[x]-OFFP[y] || x-y; });
+    let got=0;
+    for(const R of cand){ if(got>=want*.9) break; if(aggOf(pk,R)[AGGI[k]]===0 && k!=="INC") continue;
+      if(got+OFFP[R]>want*1.2) continue; kind[R]=k; got+=OFFP[R]; }
+    if(!got){ const R=cand.filter(R=>OFFP[R]<=Math.max(1,want*1.5))[0]; if(R) kind[R]=k; }
+    free=free.filter(R=>!kind[R]);
+  }
+  return {kind,free};
+}
+function penBox(pk,R){ const pass=PLAYS[pk].cat==="pass";
+  if(R===19||R===29||R===39) return pass?{k:"pen",side:"PI",yds:pk==="LG"?30:15,fd:true}:{k:"pen",side:"DEF",yds:15,fd:true};
+  if(R<20) return R%2?{k:"pen",side:"DEF",yds:5}:{k:"pen",side:"OFF",yds:pk==="LP"?5:10};
+  return R%2?{k:"pen",side:"DEF",yds:5}:{k:"pen",side:"OFF",yds:5}; }
+const INTY={SC:2,SP:7,MP:14,LG:30,SL:9};
+// Yard boxes use the grouped layout: the 30s (half of all rolls) hold the everyday gains,
+// 20-24 just below and 25-29 just above, the rare 10s the extremes.
+function yardRows(pk,team,rolls){
+  const r=RATE[team][pk]||0;
+  return bandsToRows(rolls,BANDS[pk].map(b=>({p:b.p,k:"y",lo:b.lo+r,hi:b.hi+2*r})));
+}
+const CHART={};
+function buildCharts(){
+  for(const team of ["KC","PHI"]){
+    CHART[team]={};
+    for(const pk of OFF_ORDER){
+      const {kind,free}=placeBoxes(pk,team); const yr=yardRows(pk,team,free); const col={}; const pass=PLAYS[pk].cat==="pass";
+      ROLLS.forEach(R=>{ const k=kind[R]; let c;
+        if(!k) c=yr[R];
+        else if(k==="INC") c={k:"inc"};
+        else if(k==="QT") c={k:"qt"};
+        else if(k==="B") c={k:"b"};
+        else if(k==="TD") c={k:"b"};
+        else if(k==="INT") c={k:"int",y:INTY[pk]||7};
+        else if(k==="F") c={k:"f",y:pass?2:(R%2?-1:1)};
+        else c=penBox(pk,R);
+        if(c.k==="y"){
+          if(pk==="LP" && c.y>=1 && c.y<=3 && (team==="PHI"||R%2===1)) c.paren=true;   // power push the defense can't stop
+          const a=aggOf(pk,R); if(c.y>0 && (pk==="SL" || a[8]/a[0]>=.15)) c.ob=true;
+        }
+        col[R]=c; });
+      CHART[team][pk]=col;
+    }
+    // Quarterback trapped: offense rolls again on this column.
+    const qtB = team==="KC"
+      ? [{p:18,k:"y",lo:-10,hi:-5},{p:14,k:"y",lo:-4,hi:-1},{p:24,k:"inc"},{p:20,k:"y",lo:0,hi:6},{p:15,k:"y",lo:7,hi:14},{p:9,k:"y",lo:15,hi:28}]
+      : [{p:34,k:"y",lo:-10,hi:-5},{p:24,k:"y",lo:-4,hi:-1},{p:10,k:"inc"},{p:14,k:"y",lo:0,hi:7},{p:12,k:"y",lo:8,hi:15},{p:6,k:"y",lo:16,hi:30}];
+    const qr=bandsToRows(ROLLS.filter(R=>R!==10&&R!==20),qtB); qr[10]={k:"f",y:-8}; qr[20]={k:"f",y:-6};
+    ROLLS.forEach(R=>{ if(qr[R].k==="y"&&qr[R].y>0) qr[R].scr=true; if(qr[R].k==="y"&&qr[R].y<0) qr[R].sack=true; });
+    CHART[team].QT=qr;
+    // Breakaway: offense rolls again on this column.
+    const bk=bandsToRows(ROLLS,[{p:40,k:"y",lo:15,hi:30},{p:30,k:"y",lo:31,hi:50},{p:18,k:"y",lo:51,hi:75},{p:12,k:"td"}]);
+    CHART[team].B=bk;
+    // Interception return (the team that picked it off rolls).
+    const ir=bandsToRows(ROLLS.filter(R=>R!==39),[{p:30,k:"y",lo:0,hi:0},{p:35,k:"y",lo:1,hi:10},{p:25,k:"y",lo:11,hi:25},{p:10,k:"y",lo:26,hi:45}]); ir[39]={k:"td"};
+    CHART[team].IR=ir;
+    // Kickoff return (receiving team's starting yard line). 39 = return TD.
+    const kr=bandsToRows(ROLLS.filter(R=>R!==39),[{p:20,k:"y",lo:15,hi:24},{p:55,k:"tb",lo:25,hi:25},{p:18,k:"y",lo:26,hi:35},{p:7,k:"y",lo:36,hi:50}]); kr[39]={k:"td"};
+    CHART[team].KR=kr;
+    // Punt (net yards). 10 = blocked. 39 = long return (net 10).
+    const pu=bandsToRows(ROLLS.filter(R=>R!==10&&R!==39),[{p:30,k:"y",lo:30,hi:36},{p:40,k:"y",lo:37,hi:42},{p:30,k:"y",lo:43,hi:52}]); pu[10]={k:"blk"}; pu[39]={k:"ret",y:10};
+    CHART[team].PU=pu;
+    // Field goal: longest kick that is good. 10 = blocked.
+    const fg={}; let acc=0; const tot=216;
+    ROLLS.forEach(R=>{ const q=(acc+OFFP[R]/2)/tot; acc+=OFFP[R];
+      // success curve: 25 yds ~99%, 35 ~ 92%, 45 ~ 78%, 50 ~ 60%, 55 ~ 35%, 60 ~ 12%
+      const pts=[[0,20],[.02,25],[.08,35],[.22,45],[.40,50],[.65,55],[.88,60],[1,64]];
+      let d=20; for(let i=1;i<pts.length;i++){ if(q<=pts[i][0]){ const [q0,d0]=pts[i-1],[q1,d1]=pts[i]; d=Math.round(d0+(d1-d0)*(q-q0)/(q1-q0)); break; } }
+      fg[R]=R===10?{k:"blk"}:{k:"y",y:d}; });
+    CHART[team].FG=fg;
+    // Extra point: red box = no good.
+    const xp={}; ROLLS.forEach(R=>xp[R]=R<=11?{k:"ng"}:{k:"ok"}); CHART[team].XP=xp;
+    ["KR","PU","FG","IR","B"].forEach(k=>ROLLS.forEach(R=>{ const c=CHART[team][k][R]; if(c&&c.k==="y") c.plain=true; }));
+  }
+}
+buildCharts();
+// Fumble recovery: the team that fumbled rolls. Keeps it on these rolls.
+const FUMKEEP=R=>R<=28;
+const FUMSCOOP=R=>R>=37;   // lost and returned; 39 = scoop and score
+
+// Defense chart box: what defense roll D (1-5) does to play pk under formation dk.
+// How hard each play swings with the defense (long passes swing most, the line plunge least).
+const DSCALE={LP:.5,OT:.75,ER:1,DR:1,SC:1,SP:1,MP:1.5,LG:2.5,SL:1};
+function defBox(pk,dk,D){
+  const p=PLAYS[pk]; const M=GRID[pk][dk]; const pass=p.cat==="pass"; const k=DSCALE[pk];
+  const Y=(v,paren)=>({k:"y",y:Math.round(v*k)||0,paren:!!paren});
+  const TD={k:"y",y:99,paren:true,td:true};
+  // Blitz: gets home on deep drops, but a rare 5 means it got burned for a touchdown (as on the 1983 charts).
+  if(dk==="F" && D===5 && pk==="LG") return TD;
+  if(dk==="F" && D===5 && pk==="SL") return {k:"y",y:15,paren:true};
+  if(dk==="F" && D===5 && pk==="MP") return {k:"y",y:20,paren:true};
+  if(dk==="F" && pass && pk!=="SC" && D>=4) return {k:"qt"};
+  if(dk==="F" && pass && pk!=="SC" && D===3) return Y(-3);
+  // Screen and draw are built to beat the blitz: the rush runs right past them.
+  if(dk==="F" && (pk==="SC"||pk==="DR")) return [null,Y(2),Y(4),{k:"y",y:6,paren:true},{k:"y",y:12,paren:true},{k:"y",y:20,paren:true}][D];
+  // Stacking the box for short yardage leaves nobody deep.
+  if(dk==="B" && D===5 && pk==="LG") return TD;
+  if(dk==="B" && D===5 && pk==="MP") return {k:"y",y:28,paren:true};
+  if(M>=1) return Y([0,M*2,M,0,-2,-3][D]);
+  if(M===0){ if(D===5) return pass?{k:"qt"}:Y(-2,true); return Y([0,1,0,-1,-3][D]); }
+  const a=-M; // defense guessed right
+  if(D===1) return Y(-1);
+  if(D===2) return Y(-2*a);
+  if(D===3) return {k:"y",y:Math.round((3-2*a)*Math.min(1,k)),paren:true};
+  if(D===4) return pass?{k:"qt"}:{k:"y",y:-1-a,paren:true};
+  return pass?{k:"qt"}:{k:"y",y:-3,paren:true};
+}
+
+// ---------- Resolving a play (the Paydirt priority rules) ----------
+function boxTxt(c){ if(!c) return "";
+  if(c.k==="y"){ if(c.td) return "(TD)"; const v=c.plain?String(c.y):(c.y>0?"+":"")+c.y; return c.paren?`(${v})`:v; }
+  return ({inc:"INC",qt:"QT",b:"B",td:"TD",tb:"TB 25",blk:"BLK",ng:"NO",ok:"GOOD",ret:"RET"})[c.k]||(c.k==="int"?`INT ${c.y}`:c.k==="f"?`F ${c.y>0?"+":""}${c.y}`:c.k==="pen"?`${c.side} ${c.yds}${c.fd?"*":""}`:c.k);
+}
 function fmtGain(y){return y>0?`gain of ${y}`:y===0?"no gain":`loss of ${-y}`;}
+// Combine an offense box and a defense box. Returns {kind, y, why, follow?}
+function combine(o,d,pk){
+  const pass=PLAYS[pk].cat==="pass";
+  if(o.k==="b") return {kind:"follow",follow:"B",why:"Breakaway! Offense rolls on its Breakaway column."};
+  if(o.k==="qt") return {kind:"follow",follow:"QT",why:"Quarterback trapped! Offense rolls on its QT column."};
+  if(o.k==="int") return {kind:"follow",follow:"INT",y:o.y,why:"Intercepted! Defense rolls for the return."};
+  if(o.k==="f") return {kind:"follow",follow:"FUM",y:o.y,why:"Fumble! The offense rolls to see who recovers."};
+  if(o.k==="pen") return {kind:"pen",pen:o,why:o.side==="OFF"?`Penalty on the offense, ${o.yds} yards.`:o.side==="PI"?`Pass interference, ${o.yds} yards and a first down.`:`Penalty on the defense, ${o.yds} yards${o.fd?" and a first down":""}.`};
+  if(o.k==="inc"){ if(d.k==="qt") return {kind:"follow",follow:"QT",why:"The rush gets home: quarterback trapped! Offense rolls on its QT column."}; return {kind:"inc",y:0,why:"Incomplete."}; }
+  // yards box
+  if(d.k==="qt"){ if(o.paren) return {kind:"y",y:o.y,why:`Offense box (${o.y}) overrules.`}; return {kind:"follow",follow:"QT",why:"The rush gets home: quarterback trapped! Offense rolls on its QT column."}; }
+  if(o.paren && d.paren) return {kind:"y",y:o.y+d.y,why:"Both boxes in ( ): add them."};
+  if(o.paren) return {kind:"y",y:o.y,why:"Offense box in ( ) overrules."};
+  if(d.paren) return {kind:"y",y:d.y,why:"Defense box in ( ) overrules."};
+  return {kind:"y",y:o.y+d.y,why:"Add the boxes."};
+}
+function resolveScrimmage(team,pk,dk,dice){
+  const R=offValue(dice.t,dice.a,dice.b);
+  let D=defValue(dice.d1,dice.d2)+(DEFRATE[other(team)][dk]||0); if(D>5)D=5;
+  const o=CHART[team][pk][R]; const d=defBox(pk,dk,D);
+  const out=combine(o,d,pk); out.R=R; out.D=D; out.o=o; out.d=d; out.ob=!!o.ob;
+  return out;
+}
 
 // ---------- Game state ----------
 const other=t=>t==="KC"?"PHI":"KC";
@@ -111,25 +264,24 @@ function spotName(abs){ if(abs===50)return "50"; return abs<50?`KC ${abs}`:`PHI 
 function ownToAbs(team,own){return team==="KC"?own:100-own;}
 
 function newGame(qmin,nq){
-  return {v:3,rev:1,phase:"lobby",poss:null,ball:25,down:1,toGo:10,q:1,qmin:qmin||8,nq:nq||4,clock:(qmin||8)*60,running:false,to:{KC:3,PHI:3},paused:false,score:{KC:0,PHI:0},
+  return {v:4,rev:1,phase:"lobby",poss:null,ball:25,down:1,toGo:10,q:1,qmin:qmin||8,nq:nq||4,clock:(qmin||8)*60,running:false,to:{KC:3,PHI:3},paused:false,score:{KC:0,PHI:0},
           recv1:null,last:null,log:[],winner:null,ot:false,started:Date.now()};
 }
 function addLog(s,team,txt){s.log.unshift({t:team,x:txt,q:s.q});if(s.log.length>14)s.log.length=14;}
-
 function startPossession(s,team,own){s.poss=team;s.ball=ownToAbs(team,own);s.down=1;s.toGo=Math.min(10,toGoal(s));}
+function tick(s){}
 
-function tick(s){ /* timing handled by runClock */ }
 // ---------- Clock ----------
-const TEMPO={normal:{name:"Normal huddle",secs:35},hurry:{name:"Hurry-up",secs:12},milk:{name:"Run the clock",secs:40}};
-const PLAYSECS={RI:5,RO:6,DR:5,QB:3,SC:6,SP:5,SL:5,MP:6,LP:8,PA:7,PUNT:8,FG:4,KO:5,SPIKE:2,KNEEL:3};
+// Paydirt-style timing in 10-second boxes: the snap itself uses 1 box; a running clock also burns the huddle.
+const TEMPO={normal:{name:"Normal huddle",secs:30},hurry:{name:"Hurry-up",secs:10},milk:{name:"Run the clock",secs:40}};
+const PLAYSECS={LP:10,OT:10,ER:10,DR:10,SC:10,SP:10,MP:10,LG:10,SL:10,PUNT:10,FG:10,KO:10,SPIKE:0,KNEEL:10};
 const fmtClock=c=>{c=Math.max(0,Math.round(c));return Math.floor(c/60)+":"+String(c%60).padStart(2,"0");};
 const twoMinQ=s=>!s.ot&&(s.q===s.nq||(s.nq>=2&&s.q===s.nq/2));
-// seconds that run off before the snap if the clock is running
 function preSnap(s,tempo){ return s.running?(TEMPO[tempo]||TEMPO.normal).secs:0; }
 function runClock(s,pk,tempo,stopAfter){
   const c0=s.clock; let c=c0; let warned=false;
   if(s.running){ const c1=c-preSnap(s,tempo); if(twoMinQ(s)&&!s.warned&&c>120&&c1<=120){ c=120; warned=true; } else c=c1; }
-  const cBeforePlay=c; c-= (PLAYSECS[pk]||5);
+  const cBeforePlay=c; c-= (PLAYSECS[pk]!=null?PLAYSECS[pk]:10);
   if(twoMinQ(s)&&!s.warned&&!warned&&cBeforePlay>120&&c<=120){ warned=true; }
   s.clock=Math.max(0,c); s.running=!stopAfter;
   if(warned){ s.warned=true; s.running=false; addLog(s,null,"Two-minute warning. Clock stops."); }
@@ -142,6 +294,7 @@ function endQuarter(s){
   if(s.q>=s.nq){ s.endPending=true; addLog(s,null,"0:00. End of regulation."); return; }
   s.q++; s.clock=s.qmin*60; addLog(s,null,`End of quarter. Q${s.q} starts.`);
 }
+function endGame(s){ s.phase="over"; s.winner=s.score.KC>s.score.PHI?"KC":s.score.PHI>s.score.KC?"PHI":"TIE"; addLog(s,null,`Final: KC ${s.score.KC}, PHI ${s.score.PHI}`); }
 function afterPlay(s){
   if(s.phase==="pat"||s.phase==="over") return;
   if(s.endPending){ s.endPending=false;
@@ -150,126 +303,150 @@ function afterPlay(s){
     return; }
   if(s.halfPending){ s.halfPending=false; s.phase="kickoff"; s.kicker=s.recv1; s.poss=null; addLog(s,null,`Second half: ${TEAMS[s.recv1].name} kick off.`); }
 }
-function endGame(s){ s.phase="over"; s.winner=s.score.KC>s.score.PHI?"KC":s.score.PHI>s.score.KC?"PHI":"TIE"; addLog(s,null,`Final: KC ${s.score.KC}, PHI ${s.score.PHI}`); }
-
 function scored(s,team,pts,what){
   s.score[team]+=pts; addLog(s,team,`${TEAMS[team].name} ${what} (+${pts})`);
   if(s.ot && (what!=="touchdown")){ endGame(s); return true; }
   return false;
 }
-
-// Apply a resolved scrimmage play to state
-function applyScrimmage(s,pk,dk,dice){
-  const team=s.poss; const res=resolveScrimmage(team,pk,dk,dice);
-  const losAbs=s.ball; let txt=`${TEAMS[team].short} ${PLAYS[pk].name} vs ${DEFS[dk].name}: ${res.txt}`;
-  s.last={team,pk,dk,dice,R:res.R,D:res.D,txt:"",cls:""};
-  const def=other(team);
-  s.last.stop = res.kind!=="yds" || !!res.pen;
-  const onesV=res.R%10;
-  if(res.kind==="yds" && !res.pen && res.y>0 && (pk==="SL" || ((pk==="RO"||pk==="SP"||pk==="SC") && onesV%2===1))){ s.last.stop=true; s.last.oob=true; }
-  if(res.kind==="int"||res.kind==="fum"){
-    // turnover
-    let spot = losAbs + dir(team)*(res.kind==="int"?(pk==="LP"?25:pk==="MP"?12:6):Math.max(0,Math.min(3,toGoal(s)-1)));
-    spot=Math.max(1,Math.min(99,spot));
-    const ret = res.scoop?100:(res.kind==="int"?(dice.a+dice.b-2)*3:0);
-    let newBall = spot - dir(team)*ret;
-    s.last.cls="to";
-    if((def==="KC"&&newBall>=100)||(def==="PHI"&&newBall<=0)){
-      txt+=" Returned for a TOUCHDOWN!";
-      s.last.txt=txt; s.last.cls="td"; s.last.team=def; addLog(s,def,txt); tick(s);
-      s.poss=def; scored(s,def,6,"touchdown"); if(s.ot){endGame(s);return;} s.phase="pat"; s.ball=ownToAbs(def,98); return;
-    }
-    newBall=Math.max(1,Math.min(99,newBall));
-    s.poss=def; s.ball=newBall; s.down=1; s.toGo=Math.min(10,toGoal(s));
-    txt+=` ${TEAMS[def].name} ball at ${spotName(newBall)}.`;
-    s.last.txt=txt; addLog(s,team,txt); tick(s); return;
-  }
-  // yards (incl. penalties, incomplete y=0)
-  let y=res.kind==="inc"?0:res.y;
-  const gTo=toGoal(s);
-  if(res.pen && !res.fd && y>0 && y>=gTo) y=Math.floor(gTo/2); // half the distance
-  if(res.pen && y<0 && -y>=(100-gTo)) y=-Math.floor((100-gTo)/2);
-  s.ball += dir(team)*y;
-  const nowToGoal=toGoal(s);
-  if(nowToGoal<=0){ // touchdown
-    s.ball=team==="KC"?100:0; s.last.cls="td"; txt+=" TOUCHDOWN!"; s.last.txt=txt; addLog(s,team,txt); tick(s);
-    scored(s,team,6,"touchdown"); if(s.ot){endGame(s);return;} s.phase="pat"; s.ball=ownToAbs(team,98); return;
-  }
-  if(nowToGoal>=100){ // safety
-    s.ball=ownToAbs(team,0); txt+=" SAFETY!"; s.last.txt=txt; s.last.cls="to"; addLog(s,team,txt); tick(s);
-    if(scored(s,def,2,"safety"))return;
-    s.phase="kickoff"; s.kicker=team; s.freeKick=true; return;
-  }
-  if(res.pen && y<0 && !res.fd){ s.toGo-=y; }
-  else if(res.fd || y>=s.toGo){ s.down=1; s.toGo=Math.min(10,nowToGoal); txt+=" First down!"; }
-  else { s.toGo-=y; s.down++; if(res.pen && y<0) s.down--; }
-  if(res.pen && y<0) {/* repeat down */}
-  if(s.down>4){ txt+=` Turnover on downs.`; s.poss=def; s.down=1; s.toGo=Math.min(10,toGoal(s)); s.last.cls="to"; }
-  if(s.last.oob && !s.last.cls) txt+=" Out of bounds, clock stops.";
-  if(s.last.cls) s.last.stop=true;
-  s.last.txt=txt; addLog(s,team,txt); tick(s);
+function touchdown(s,team,txt){
+  s.ball=team==="KC"?100:0; s.last.cls="td"; s.last.ev="td"; s.last.team=team; s.last.txt=txt+" TOUCHDOWN!"; addLog(s,team,s.last.txt);
+  s.poss=team; scored(s,team,6,"touchdown"); if(s.ot){endGame(s);return;} s.phase="pat"; s.ball=ownToAbs(team,98);
 }
 
+// Step 1 of a scrimmage play. May leave s.follow set, which needs one more roll.
+function applyScrimmage(s,pk,dk,dice){
+  const team=s.poss; const res=resolveScrimmage(team,pk,dk,dice);
+  s.last={team,pk,dk,dice,R:res.R,D:res.D,o:res.o,d:res.d,why:res.why,txt:"",cls:"",from:s.ball};
+  const head=`${TEAMS[team].short} ${PLAYS[pk].name} vs ${DEFS[dk].short}:`;
+  if(res.kind==="follow"){
+    s.follow={kind:res.follow,team:res.follow==="INT"?other(team):team,pk,y:res.y,los:s.ball};
+    s.last.txt=`${head} ${res.why}`; s.last.ev=res.follow==="QT"?"qt":res.follow==="B"?"brk":res.follow==="INT"?"int":"fum"; s.last.stop=true; s.last.wait=true;
+    addLog(s,team,s.last.txt); return;
+  }
+  if(res.kind==="pen"){ applyPenalty(s,res.pen,head); return; }
+  if(res.kind==="inc"){ s.last.txt=`${head} Incomplete.`; s.last.ev="inc"; s.last.stop=true; s.down++; turnoverOnDowns(s); addLog(s,team,s.last.txt); return; }
+  gainYards(s,res.y,head+" "+(PLAYS[pk].cat==="pass"?"Complete, ":"")+fmtGain(res.y)+".",res.ob);
+}
+function turnoverOnDowns(s){
+  if(s.down>4){ const def=other(s.poss); s.last.txt+=" Turnover on downs."; s.poss=def; s.down=1; s.toGo=Math.min(10,toGoal(s)); s.last.cls="to"; s.last.ev=s.last.ev||"downs"; s.last.stop=true; }
+}
+// Move the ball y yards for the offense and handle TD / safety / downs.
+function gainYards(s,y,txt,ob){
+  const team=s.poss, def=other(team);
+  s.ball+=dir(team)*y; s.last.y=y;
+  const g=toGoal(s);
+  if(g<=0){ touchdown(s,team,txt); return; }
+  if(g>=100){ s.ball=ownToAbs(team,0); s.last.txt=txt+" SAFETY!"; s.last.cls="to"; s.last.ev="safety"; addLog(s,team,s.last.txt);
+    if(scored(s,def,2,"safety"))return; s.phase="kickoff"; s.kicker=team; s.freeKick=true; return; }
+  if(y>=s.toGo){ s.down=1; s.toGo=Math.min(10,g); txt+=" First down!"; s.last.ev=s.last.ev||"first"; }
+  else { s.toGo-=y; s.down++; if(y<0&&s.last.qtSack) s.last.ev="sack"; }
+  s.last.txt=txt; turnoverOnDowns(s);
+  if(ob && y>0 && !s.last.cls){ s.last.txt+=" Out of bounds, clock stops."; s.last.stop=true; }
+  if(s.last.cls) s.last.stop=true;
+  addLog(s,team,s.last.txt);
+}
+function applyPenalty(s,p,head){
+  const team=s.poss; const g=toGoal(s);
+  let y=p.side==="OFF"?-p.yds:p.yds;
+  if(y>0 && y>=g) y=Math.max(1,Math.floor(g/2));
+  if(y<0 && -y>=(100-g)) y=-Math.floor((100-g)/2);
+  s.ball+=dir(team)*y; s.last.ev="flag"; s.last.stop=true; s.last.y=y;
+  let txt=`${head} FLAG! ${p.side==="OFF"?(p.yds===5?"False start":"Holding")+" on the offense":p.side==="PI"?"Pass interference on the defense":p.yds===5?"Offside on the defense":"Personal foul on the defense"}, ${Math.abs(y)} yards.`;
+  if(p.fd||(y>0&&y>=s.toGo)){ s.down=1; s.toGo=Math.min(10,toGoal(s)); txt+=" Automatic first down."; }
+  else { s.toGo-=y; txt+=" Replay the down."; }
+  s.last.txt=txt; addLog(s,team,txt);
+}
+// Step 2: the follow-up roll (QT, breakaway, fumble recovery, interception return).
+function applyFollow(s,dice){
+  const f=s.follow; s.follow=null; const R=offValue(dice.t,dice.a,dice.b);
+  const off=s.poss, def=other(off);
+  s.last.fol={kind:f.kind,R,team:f.team,dice}; s.last.wait=false; s.last.from=f.los;
+  const head=`${TEAMS[off].short} ${PLAYS[f.pk].name}:`;
+  if(f.kind==="B"){ const c=CHART[off].B[R]; s.last.fol.box=c;
+    if(c.k==="td"){ touchdown(s,off,`${head} Breakaway, nobody catches him!`); s.last.ev="td"; return; }
+    s.last.ev="brk"; gainYards(s,c.y,`${head} Breakaway! Gain of ${c.y}.`); if(s.last.ev==="first") s.last.ev="brk"; return; }
+  if(f.kind==="QT"){ const c=CHART[off].QT[R]; s.last.fol.box=c;
+    if(c.k==="inc"){ s.last.txt=`${head} Quarterback trapped, throws it away. Incomplete.`; s.last.ev="inc"; s.last.stop=true; s.down++; turnoverOnDowns(s); addLog(s,off,s.last.txt); return; }
+    if(c.k==="f"){ s.follow={kind:"FUM",team:off,pk:f.pk,y:c.y,los:f.los}; s.last.txt=`${head} Strip sack! Fumble at ${fmtGain(c.y).replace("gain of ","+").replace("loss of ","−")}. The offense rolls to see who recovers.`; s.last.ev="fum"; s.last.wait=true; addLog(s,off,s.last.txt); return; }
+    s.last.qtSack=c.y<0; const t=c.y<0?`Quarterback trapped, SACKED for a loss of ${-c.y}.`:c.y===0?"Quarterback trapped, scrambles back to the line. No gain.":`Quarterback trapped, scrambles for ${c.y}!`;
+    gainYards(s,c.y,`${head} ${t}`, c.y>0 && R%2===1); if(c.y<0&&!s.last.cls) s.last.ev="sack"; else if(c.y>=0&&s.last.ev!=="first"&&!s.last.cls) s.last.ev="scramble"; return; }
+  if(f.kind==="FUM"){ const spot=f.los+dir(off)*f.y; s.last.fol.box={k:FUMKEEP(R)?"keep":"lost"};
+    if(FUMKEEP(R)){ s.ball=f.los; gainYards(s,f.y,`${head} Fumble... recovered by the ${TEAMS[off].name}! ${fmtGain(f.y)[0].toUpperCase()+fmtGain(f.y).slice(1)}.`); if(!s.last.cls&&s.last.ev!=="first") s.last.ev="recover"; return; }
+    s.last.cls="to"; s.last.ev="turnover"; s.last.stop=true;
+    const sp=Math.max(1,Math.min(99,spot));
+    if(R===39){ s.poss=def; touchdown(s,def,`${head} Fumble! Scooped up by the ${TEAMS[def].name} and returned all the way!`); return; }
+    const ret=FUMSCOOP(R)?15:0; let nb=sp-dir(off)*ret; nb=Math.max(1,Math.min(99,nb));
+    s.poss=def; s.ball=nb; s.down=1; s.toGo=Math.min(10,toGoal(s));
+    s.last.txt=`${head} FUMBLE! ${TEAMS[def].name} recover${ret?" and return it 15":""}. ${TEAMS[def].name} ball at ${spotName(nb)}.`; addLog(s,off,s.last.txt); return; }
+  if(f.kind==="INT"){ const c=CHART[def].IR[R]; s.last.fol.box=c; s.last.cls="to"; s.last.ev="int"; s.last.stop=true;
+    let sp=f.los+dir(off)*f.y; if((off==="KC"&&sp>=100)||(off==="PHI"&&sp<=0)){ s.poss=def; s.ball=ownToAbs(def,20); s.down=1; s.toGo=10; s.last.txt=`${head} INTERCEPTED in the end zone. Touchback, ${TEAMS[def].name} ball at their 20.`; addLog(s,off,s.last.txt); return; }
+    sp=Math.max(1,Math.min(99,sp));
+    if(c.k==="td"){ s.poss=def; touchdown(s,def,`${head} INTERCEPTED and returned for a pick six!`); return; }
+    let nb=sp-dir(off)*c.y;
+    if((def==="KC"&&nb>=100)||(def==="PHI"&&nb<=0)){ s.poss=def; touchdown(s,def,`${head} INTERCEPTED and returned for a pick six!`); return; }
+    nb=Math.max(1,Math.min(99,nb)); s.poss=def; s.ball=nb; s.down=1; s.toGo=Math.min(10,toGoal(s));
+    s.last.txt=`${head} INTERCEPTED! Returned ${c.y} yards. ${TEAMS[def].name} ball at ${spotName(nb)}.`; addLog(s,off,s.last.txt); return; }
+}
+
+// ---------- Kicks ----------
 function applyPunt(s,dice){
-  const team=s.poss, def=other(team); const R=offValue(dice.t,dice.a,dice.b);
-  const t=Math.min(3,Math.floor(R/10)), ones=R-t*10;
-  let txt; s.last={team,pk:"PUNT",dice,R,txt:"",cls:""};
-  if(R===10){ s.ball-=dir(team)*5; s.ball=Math.max(1,Math.min(99,s.ball)); txt=`${TEAMS[team].short} punt BLOCKED! ${TEAMS[def].name} ball at ${spotName(s.ball)}.`; s.poss=def; s.down=1; s.toGo=Math.min(10,toGoal(s)); s.last.cls="to"; }
+  const team=s.poss, def=other(team); const R=offValue(dice.t,dice.a,dice.b); const c=CHART[team].PU[R];
+  let txt; s.last={team,pk:"PUNT",dice,R,txt:"",cls:"",from:s.ball,o:c,ev:"punt"};
+  if(c.k==="blk"){ s.ball-=dir(team)*5; s.ball=Math.max(1,Math.min(99,s.ball)); txt=`${TEAMS[team].short} punt BLOCKED! ${TEAMS[def].name} ball at ${spotName(s.ball)}.`; s.poss=def; s.down=1; s.toGo=Math.min(10,toGoal(s)); s.last.cls="to"; s.last.ev="block"; }
   else{
-    let net=36+(ones-5)*2+(t-2)*3; if(R===40){net=10;}
+    const net=c.k==="ret"?10:c.y;
     let land=s.ball+dir(team)*net; let tb=false;
     if((team==="KC"&&land>=100)||(team==="PHI"&&land<=0)){ tb=true; land=ownToAbs(def,20); }
     s.poss=def; s.ball=land; s.down=1; s.toGo=Math.min(10,toGoal(s));
-    txt=`${TEAMS[team].short} punts${R===40?", huge return!":""} ${tb?"Touchback.":`Net ${net}.`} ${TEAMS[def].name} ball at ${spotName(land)}.`;
+    txt=`${TEAMS[team].short} punts${c.k==="ret"?", huge return!":""} ${tb?"Touchback.":`Net ${net}.`} ${TEAMS[def].name} ball at ${spotName(land)}.`;
   }
-  s.last.txt=txt; addLog(s,team,txt); tick(s);
+  s.last.txt=txt; addLog(s,team,txt);
 }
-function fgNeed(dist){return dist<=29?13:dist<=39?17:dist<=45?21:dist<=50?25:dist<=55?30:dist<=60?35:99;}
+// Share of offense boxes that stop the clock (incomplete, out of bounds, flag, turnover; about half of QTs).
+function clockStopPct(team,pk){ let n=0; ROLLS.forEach(R=>{ const c=CHART[team][pk][R]; let s=0;
+  if(c.k==="inc"||c.k==="pen"||c.k==="int"||c.k==="f") s=1; else if(c.k==="qt") s=.45; else if(c.k==="y"&&c.ob) s=1; n+=s*OFFP[R]; }); return Math.round(n/216*100); }
+function fgNeed(dist,team){ let best=99; ROLLS.forEach(R=>{ const c=CHART[team||"KC"].FG[R]; if(c.k==="y"&&c.y>=dist&&R<best) best=R; }); return best; }
+function fgChance(dist,team){ let n=0; ROLLS.forEach(R=>{ const c=CHART[team].FG[R]; if(c.k==="y"&&c.y>=dist) n+=OFFP[R]; }); return Math.round(n/216*100); }
 function applyFG(s,dice){
   const team=s.poss, def=other(team); const R=offValue(dice.t,dice.a,dice.b);
-  const dist=toGoal(s)+17; const need=fgNeed(dist);
-  s.last={team,pk:"FG",dice,R,txt:"",cls:""};
-  if(R>=need){
-    const txt=`${TEAMS[team].short} ${dist}-yard field goal is GOOD! (rolled ${R}, needed ${need}+)`;
-    s.last.txt=txt; s.last.cls="td"; addLog(s,team,txt); tick(s);
+  const dist=toGoal(s)+17; const c=CHART[team].FG[R];
+  s.last={team,pk:"FG",dice,R,txt:"",cls:"",o:c,from:s.ball};
+  if(c.k==="y"&&c.y>=dist){
+    const txt=`${TEAMS[team].short} ${dist}-yard field goal is GOOD! (box says good to ${c.y})`;
+    s.last.txt=txt; s.last.cls="td"; s.last.ev="fg"; addLog(s,team,txt);
     if(scored(s,team,3,"field goal"))return;
     s.phase="kickoff"; s.kicker=team; return;
   }
   const nb=s.ball-dir(team)*7;
-  // defense takes over at spot of kick or their 20, whichever is better for them
   const defOwnAtKick = def==="KC"?nb:100-nb; const ownSpot=Math.max(20,defOwnAtKick);
   s.poss=def; s.ball=ownToAbs(def,ownSpot); s.down=1; s.toGo=10;
-  const txt=`${TEAMS[team].short} ${dist}-yard field goal is NO GOOD (rolled ${R}, needed ${need}+). ${TEAMS[def].name} ball at ${spotName(s.ball)}.`;
-  s.last.txt=txt; s.last.cls="to"; addLog(s,team,txt); tick(s);
+  const txt=`${TEAMS[team].short} ${dist}-yard field goal is ${c.k==="blk"?"BLOCKED":"NO GOOD (box says "+c.y+")"}. ${TEAMS[def].name} ball at ${spotName(s.ball)}.`;
+  s.last.txt=txt; s.last.cls="to"; s.last.ev="fgmiss"; addLog(s,team,txt);
 }
 function applyKickoff(s,dice){
-  const kick=s.kicker, recv=other(kick); const R=offValue(dice.t,dice.a,dice.b);
-  const t=Math.min(3,Math.floor(R/10)), ones=R-t*10; let own,txt; s.last={team:kick,pk:"KO",dice,R,txt:"",cls:""};
-  if(s.freeKick){ own=Math.min(45,25+ones*2); s.freeKick=false; txt=`Free kick after the safety. ${TEAMS[recv].name} start at their ${own}.`; }
-  else if(R===40){ txt=`KICKOFF RETURNED FOR A TOUCHDOWN by the ${TEAMS[recv].name}!`; s.poss=recv; s.last.cls="td"; s.last.txt=txt; addLog(s,recv,txt);
-    scored(s,recv,6,"touchdown"); if(s.ot){endGame(s);return;} s.phase="pat"; s.ball=ownToAbs(recv,98); return; }
-  else if(t===1){ own=12+ones; txt=`Short return. ${TEAMS[recv].name} start at their ${own}.`; }
-  else if(t===2){ own=25; txt=`Touchback. ${TEAMS[recv].name} start at their 25.`; }
-  else { own=20+ones*3; txt=`Good return! ${TEAMS[recv].name} start at their ${own}.`; }
+  const kick=s.kicker, recv=other(kick); const R=offValue(dice.t,dice.a,dice.b); const c=CHART[recv].KR[R];
+  let own,txt; s.last={team:kick,pk:"KO",dice,R,txt:"",cls:"",o:c,ev:"kick",from:ownToAbs(kick,35)};
+  if(s.freeKick){ own=Math.min(45,20+Math.max(0,R-10)); s.freeKick=false; txt=`Free kick after the safety. ${TEAMS[recv].name} start at their ${own}.`; }
+  else if(c.k==="td"){ s.poss=recv; s.last.txt=""; touchdown(s,recv,`Kickoff RETURNED by the ${TEAMS[recv].name}!`); return; }
+  else if(c.k==="tb"){ own=25; txt=`Touchback. ${TEAMS[recv].name} start at their 25.`; }
+  else { own=c.y; txt=`${own>=36?"Big return! ":""}${TEAMS[recv].name} start at their ${own}.`; }
   startPossession(s,recv,own); s.phase="play"; s.last.txt=txt; addLog(s,recv,txt);
 }
 function applyPAT(s,kind,dice,pk,dk){
   const team=s.poss; const R=offValue(dice.t,dice.a,dice.b);
   s.last={team,pk:kind,dice,R,txt:"",cls:""};
   if(kind==="XP"){
-    if(R<=12){ s.last.txt=`${TEAMS[team].short} extra point is NO GOOD! (rolled ${R})`; s.last.cls="to"; }
-    else { s.score[team]+=1; s.last.txt=`${TEAMS[team].short} extra point is good.`; }
+    if(CHART[team].XP[R].k==="ng"){ s.last.txt=`${TEAMS[team].short} extra point is NO GOOD! (rolled ${R}, red box)`; s.last.cls="to"; s.last.ev="fgmiss"; }
+    else { s.score[team]+=1; s.last.txt=`${TEAMS[team].short} extra point is good.`; s.last.ev="xp"; }
   } else {
-    const res=resolveScrimmage(team,pk,dk,dice);
-    const ok=(res.kind==="yds"||res.kind==="pen")&&res.y>=2;
-    if(ok){ s.score[team]+=2; s.last.txt=`${TEAMS[team].short} two-point try (${PLAYS[pk].name} vs ${DEFS[dk].name}): GOOD!`; s.last.cls="td"; }
-    else { s.last.txt=`${TEAMS[team].short} two-point try (${PLAYS[pk].name} vs ${DEFS[dk].name}): no good.`; s.last.cls="to"; }
-    s.last.D=res.D;
+    const res=resolveScrimmage(team,pk,dk,dice); s.last.o=res.o; s.last.d=res.d; s.last.D=res.D; s.last.pk=pk; s.last.dk=dk; s.last.why=res.why;
+    const ok=(res.kind==="y"&&res.y>=2)||(res.kind==="pen"&&res.pen.side!=="OFF")||(res.kind==="follow"&&res.follow==="B");
+    if(ok){ s.score[team]+=2; s.last.txt=`${TEAMS[team].short} two-point try (${PLAYS[pk].name} vs ${DEFS[dk].short}): GOOD!`; s.last.cls="td"; s.last.ev="two"; }
+    else { s.last.txt=`${TEAMS[team].short} two-point try (${PLAYS[pk].name} vs ${DEFS[dk].short}): no good.`; s.last.cls="to"; s.last.ev="fgmiss"; }
   }
   addLog(s,team,s.last.txt);
   s.phase="kickoff"; s.kicker=team;
 }
-
 // ---------- Players, turns, actions (host is the single source of truth) ----------
 function teamList(s,team){ return s.players.filter(p=>p.team===team); }
 function pickRot(s,team,key){ const L=teamList(s,team); if(!L.length) return null; return L[((s[key][team]||0)%L.length+L.length)%L.length]; }
@@ -284,6 +461,7 @@ function needs(s){
   if(s.phase==="toss") return [{kind:"toss"}];
   if(s.phase==="over") return [];
   if(s.phase==="kickoff"){ if(!P.od) out.push({team:s.kicker,kind:"roll",side:"off"}); return out; }
+  if(s.follow) return [{team:s.follow.team,kind:"roll",side:"fol",fol:s.follow.kind}];
   const off=s.poss, def=other(s.poss);
   if(s.phase==="pat"&&!P.pat) return [{team:off,kind:"pat",side:"off"}];
   if(s.phase==="pat"&&P.pat==="XP"){ if(!P.od) out.push({team:off,kind:"roll",side:"off"}); return out; }
@@ -325,7 +503,7 @@ function handleAction(s,a,pid){
     case "settings": if(!isAdmin) return false; { const m=+a.qmin, n=+a.nq; if(QMINS.includes(m)){ s.qmin=m; if(s.phase==="lobby"||s.phase==="toss") s.clock=m*60; } if(NQS.includes(n)&&(s.phase==="lobby"||s.phase==="toss"||n>=s.q)) s.nq=n; return true; }
     case "pause": if(!isAdmin) return false; s.paused=!!a.on; addLog(s,null,s.paused?"Game paused by the admin.":"Game resumed."); return true;
     case "timeout":{ const t=a.team==="PHI"?"PHI":a.team==="KC"?"KC":null; if(!t) return false; const me=s.players.find(p=>p.id===pid); if(!(isAdmin||(me&&me.team===t))) return false;
-      if(s.phase!=="play"||s.pend.od||s.pend.dd||!(s.to[t]>0)) return false; s.to[t]--; s.running=false; addLog(s,t,`Timeout ${TEAMS[t].name} (${s.to[t]} left). Clock stopped at ${fmtClock(s.clock)}.`); s.last={txt:`Timeout, ${TEAMS[t].name}. Clock stopped at ${fmtClock(s.clock)}.`,cls:"",team:t}; return true; }
+      if(s.phase!=="play"||s.follow||s.pend.od||s.pend.dd||!(s.to[t]>0)) return false; s.to[t]--; s.running=false; addLog(s,t,`Timeout ${TEAMS[t].name} (${s.to[t]} left). Clock stopped at ${fmtClock(s.clock)}.`); s.last={txt:`Timeout, ${TEAMS[t].name}. Clock stopped at ${fmtClock(s.clock)}.`,cls:"",team:t}; return true; }
     case "start": if(!isAdmin||s.phase!=="lobby") return false; s.phase="toss"; s.clock=s.qmin*60; return true;
     case "toss": if(!isAdmin||s.phase!=="toss") return false; { snapshotPrev(s); const recv=Math.random()<.5?"KC":"PHI"; s.recv1=recv; s.kicker=other(recv); s.phase="kickoff"; s.pend={}; addLog(s,recv,`${TEAMS[recv].name} win the toss and receive.`); s.last={txt:`${TEAMS[recv].name} win the toss and will receive. ${TEAMS[s.kicker].name} kick off.`,cls:""}; return true; }
     case "newgame": if(!isAdmin) return false; { const keep=s.players, adm=s.admin, code=s.code; const n=newGame(s.qmin,s.nq); Object.assign(s,n,{players:keep,admin:adm,code,rev:s.rev,started:Date.now(),ci:{KC:0,PHI:0},ro:{KC:0,PHI:0},pend:{}}); delete s.prev; return true; }
@@ -348,6 +526,7 @@ function handleAction(s,a,pid){
       if(a.side==="off") delete P.oc; else delete P.dc; return true; }
     case "roll":{
       const ns=needs(s); const n=ns.find(x=>x.kind==="roll"&&x.side===a.side); if(!n||!canAct(s,pid,n)) return false;
+      if(a.side==="fol"){ const d=a.dice&&validDice(a.dice,["t","a","b"])?{t:a.dice.t,a:a.dice.a,b:a.dice.b}:{t:d6(),a:d6(),b:d6()}; resolveFollow(s,d); return true; }
       if(a.side==="off"){ const d=a.dice&&validDice(a.dice,["t","a","b"])?{t:a.dice.t,a:a.dice.a,b:a.dice.b}:{t:d6(),a:d6(),b:d6()}; s.pend.od=d; }
       else { const d=a.dice&&validDice(a.dice,["d1","d2"])?{d1:a.dice.d1,d2:a.dice.d2}:{d1:d6(),d2:d6()}; s.pend.dd=d; }
       if(needs(s).length===0) resolvePending(s);
@@ -362,7 +541,7 @@ function applySpecial(s,k){
   if(s.down>4){ s.last.txt+=" Turnover on downs."; s.poss=other(team); s.down=1; s.toGo=Math.min(10,toGoal(s)); s.last.stop=true; }
   addLog(s,team,s.last.txt);
 }
-const QMINS=[3,4,5,6,8,10,15]; const NQS=[1,2,4];
+const QMINS=[5,8,10,12,15]; const NQS=[2,4];
 function resolvePending(s){
   const P=s.pend; snapshotPrev(s);
   const dice=Object.assign({d1:1,d2:1},P.od||{},P.dd||{});
@@ -378,7 +557,9 @@ function resolvePending(s){
     if(P.oc==="PUNT"){ applyPunt(s,dice); used.call.push(off); runClock(s,"PUNT",tempo,true); }
     else if(P.oc==="FG"){ applyFG(s,dice); used.call.push(off); runClock(s,"FG",tempo,true); }
     else if(P.oc==="SPIKE"||P.oc==="KNEEL"){ applySpecial(s,P.oc); used.call.push(off); runClock(s,P.oc,tempo,P.oc==="SPIKE"); }
-    else { applyScrimmage(s,P.oc,P.dc,dice); used.call.push(off,def); if(s.last.pk&&PLAYS[s.last.pk]) s.last.tempo=tempo; runClock(s,P.oc,tempo,!!s.last.stop||s.phase!=="play"); }
+    else { applyScrimmage(s,P.oc,P.dc,dice); used.call.push(off,def); if(s.last.pk&&PLAYS[s.last.pk]) s.last.tempo=tempo;
+      if(s.follow){ s.follow.tempo=tempo; s.follow.used=used.call.slice(); s.pend={}; s.seq=(s.seq||0)+1; return; }
+      runClock(s,P.oc,tempo,!!s.last.stop||s.phase!=="play"); }
   }
   // advance rotations: callers and rollers of the teams that acted
   const kickT = s.last && s.last.pk==="KO" ? s.last.team : null;
@@ -388,6 +569,16 @@ function resolvePending(s){
   s.pend={};
   afterPlay(s);
   s.seq=(s.seq||0)+1;
+}
+
+// The follow-up roll (QT, breakaway, fumble, interception return) finishes the play.
+function resolveFollow(s,dice){
+  snapshotPrev(s); const f=s.follow; const tempo=f.tempo||"normal"; const used=f.used||[]; const pk=f.pk;
+  applyFollow(s,dice);
+  if(s.follow){ s.follow.tempo=tempo; s.follow.used=used; s.seq=(s.seq||0)+1; return; }
+  runClock(s,pk,tempo,!!s.last.stop||s.phase!=="play");
+  new Set(used.filter(Boolean)).forEach(t=>s.ci[t]=(s.ci[t]||0)+1);
+  s.pend={}; afterPlay(s); s.seq=(s.seq||0)+1;
 }
 
 // ---------- Transport ----------
@@ -403,7 +594,7 @@ let ui={view:null,sel:null,manual:false,md:{},confirm:null,tv:false,err:""};
 const hasClaude=()=>!!(window.claude&&typeof window.claude.use==="function");
 function saveHost(){ try{ localStorage.setItem(LKEY,JSON.stringify(S)); }catch(e){} }
 function loadHost(){ try{ const j=localStorage.getItem(LKEY); return j?JSON.parse(j):null; }catch(e){ return null; } }
-function freshState(code){ const s=newGame(5,4); s.code=code; s.admin=myId; s.players=[]; s.ci={KC:0,PHI:0}; s.ro={KC:0,PHI:0}; s.pend={}; s.seq=0; s.started=Date.now(); return s; }
+function freshState(code){ const s=newGame(15,4); s.code=code; s.admin=myId; s.players=[]; s.ci={KC:0,PHI:0}; s.ro={KC:0,PHI:0}; s.pend={}; s.seq=0; s.started=Date.now(); return s; }
 function genCode(){ const A="BCDFGHJKLMNPQRSTVWXZ"; let c=""; for(let i=0;i<4;i++) c+=A[Math.floor(Math.random()*A.length)]; return c; }
 
 // Public view of state sent to clients: hide the other side's call
@@ -457,8 +648,8 @@ function joinPeer(code){
     const conn=peer.connect(PFX+code,{reliable:true}); net.hostConn=conn;
     const t=setTimeout(()=>{ if(!conn.open){ net.status="Still trying to reach the admin's phone. Make sure it has the game open."; render(); } },8000);
     conn.on("open",()=>{ clearTimeout(t); net.status="Connected"; net.live=true; render(); });
-    conn.on("data",m=>{ if(m&&m.type==="state"){ const before=S&&S.seq; S=m.s; if(before!==undefined&&before!==S.seq&&S.last) celebrate(S.last); render(); } if(m&&m.type==="nope"){ ui.err="It's not your turn for that."; render(); } });
-    conn.on("close",()=>{ net.live=false; net.status="Lost the admin's phone. Reconnecting…"; render(); setTimeout(go,2500); });
+    conn.on("data",m=>{ if(m&&m.type==="state"){ const before=S&&S.seq; S=m.s; saveBackup(); net.lostAt=0; if(before!==undefined&&before!==S.seq&&S.last) celebrate(S.last); render(); } if(m&&m.type==="nope"){ ui.err="It's not your turn for that."; render(); } });
+    conn.on("close",()=>{ net.live=false; net.lostAt=net.lostAt||Date.now(); net.status="Lost the admin's phone. Reconnecting…"; render(); setTimeout(go,2500); });
     conn.on("error",()=>{});
   };
   if(peer.open) go(); else peer.on("open",go);
@@ -489,11 +680,42 @@ async function initDb(){
   }
   render();
 }
-// ---------- Confetti ----------
-function celebrate(last){
-  if(!last||last.cls!=="td") return;
+// ---------- Field animations + confetti ----------
+const FXTXT={td:["TOUCHDOWN!","td"],fg:["IT'S GOOD!","td"],fgmiss:["NO GOOD","to"],xp:["EXTRA POINT GOOD","first"],two:["TWO-POINT GOOD!","td"],
+  sack:["SACK!","to"],qt:["QB TRAPPED!","to"],brk:["BREAKAWAY!","td"],int:["INTERCEPTED!","to"],fum:["FUMBLE!","to"],turnover:["TURNOVER!","to"],
+  recover:["RECOVERED!","first"],flag:["FLAG!","flag"],first:["FIRST DOWN","first"],inc:["INCOMPLETE","dim"],punt:["PUNT","dim"],kick:["KICKOFF","dim"],
+  block:["BLOCKED!","to"],safety:["SAFETY!","to"],scramble:["SCRAMBLE!","first"],downs:["TURNOVER ON DOWNS","to"]};
+const FX_X=a=>8.333+Math.max(-2,Math.min(102,a))*0.83333;
+function celebrate(last){ if(!last) return; setTimeout(()=>{ try{ playAnim(last); }catch(e){} },40); if(last.cls==="td") confetti(last); }
+function playAnim(l){
+  const fieldEl=document.querySelector(".field"); if(!fieldEl||!S) return;
+  const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const old=document.getElementById("fx"); if(old) old.remove();
+  const ev=l.ev||(l.cls==="td"?"td":l.cls==="to"?"turnover":null);
+  const fx=document.createElement("div"); fx.id="fx"; fx.className="fx"+(S.ui_tv?" tv":"");
+  let from=l.from!=null?l.from:S.ball, to=S.ball;
+  if(S.phase==="pat"&&(ev==="td")) to=l.team==="KC"?100:0;
+  if(l.wait) to=from;
+  const pk=l.pk; const air=(PLAYS[pk]&&PLAYS[pk].cat==="pass"&&ev!=="sack"&&ev!=="qt"&&ev!=="scramble")||pk==="PUNT"||pk==="KO"||pk==="FG";
+  if(pk==="FG"){ to=l.team==="KC"?104:-4; }
+  let h="";
+  if(!reduce && from!=null && to!=null && (from!==to||pk==="FG")) h+=`<div class="fxball ${air?"arc":""}" style="--x0:${FX_X(from)}%;--x1:${FX_X(to)}%"></div>`;
+  if(ev==="fg"||ev==="fgmiss"||pk==="FG"){ const g=l.team==="KC"?100:0; h+=`<div class="fxpost ${ev==="fg"?"good":"miss"}" style="left:${FX_X(g)}%"></div>`; }
+  if(ev==="td"){ const side=(S.score&&l.team==="KC")?"r":"l"; h+=`<div class="fxez ${side}"></div>`; }
+  if(ev==="flag") h+=`<div class="fxflag">🚩</div>`;
+  if(ev==="first"&&S.poss&&S.phase==="play"){ const fd=S.ball+dir(S.poss)*Math.min(S.toGo,toGoal(S)); h+=`<div class="fxline" style="left:${FX_X(fd)}%"></div>`; }
+  const t=ev&&FXTXT[ev]; if(t) h+=`<div class="fxtxt ${t[1]}">${t[0]}</div>`;
+  if(!h) return;
+  fx.innerHTML=h; document.body.appendChild(fx);
+  if(!reduce&&(ev==="sack"||ev==="qt"||ev==="fum"||ev==="block")){ fx.classList.add("shake"); }
+  const t0=performance.now();
+  (function pos(){ const f=document.querySelector(".field"); if(!f||!fx.isConnected){ fx.remove(); return; }
+    const r=f.getBoundingClientRect(); Object.assign(fx.style,{left:r.left+"px",top:r.top+"px",width:r.width+"px",height:r.height+"px"});
+    if(performance.now()-t0<3000) requestAnimationFrame(pos); else fx.remove(); })();
+}
+function confetti(last){
   if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const cv=document.getElementById("confetti"); cv.hidden=false; const ctx=cv.getContext("2d");
+  const cv=document.getElementById("confetti"); if(!cv) return; cv.hidden=false; const ctx=cv.getContext("2d");
   cv.width=innerWidth; cv.height=innerHeight;
   const cols=last.team==="PHI"?["#00a3ad","#c4ced3","#004c54","#fff"]:["#e31837","#ffb81c","#fff"];
   const ps=Array.from({length:140},()=>({x:Math.random()*cv.width,y:-20-Math.random()*cv.height*.5,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,r:Math.random()*6.28,c:cols[Math.floor(Math.random()*cols.length)]}));
@@ -535,25 +757,48 @@ function field(big){
   return `<div class="fieldbox"><div class="field ${big?"big":""}" role="img" aria-label="Football field. ${s.poss?TEAMS[s.poss].name+" ball on "+spotName(s.ball):""}">
     <div class="ez l"><span>CHIEFS</span></div><div class="ez r"><span>EAGLES</span></div>${lines}${marks}</div></div>`;
 }
+// Dice as the five colored Paydirt dice (value shown is what the die reads as).
 function diceHTML(d,showDef){
-  if(!d) return "";
-  const t=`<div class="die t roll" title="Tens die">${tensOf(d.t)*10}</div>`;
-  const o=`<div class="die o roll">${d.a-1}</div><div class="die o roll">${d.b-1}</div>`;
-  const df=showDef&&d.d1?`<span class="tag" style="margin-left:4px">DEF</span><div class="die d roll">${d.d1}</div><div class="die d roll">${d.d2}</div>`:"";
-  return `<div class="dice">${t}${o}${df}</div>`;
+  if(!d||!d.t) return "";
+  const o=`<div class="die blk roll" title="Black die (tens)">${BLACK[d.t-1]*10}</div><div class="die wht roll" title="White die">${WHITE[d.a-1]}</div><div class="die blu roll" title="Blue die">${BLUE[d.b-1]}</div>`;
+  const df=showDef&&d.d1?`<span class="tag" style="margin-left:4px">DEF</span><div class="die red roll" title="Red die">${RED[d.d1-1]}</div><div class="die grn roll" title="Green die">${GREEN[d.d2-1]}</div>`:"";
+  return `<div class="dice">${o}${df}</div>`;
+}
+// Color of a chart box. Black = gain, red = bad for the offense, yellow = flag, gold = breakaway/TD, dashed = incomplete.
+function boxCls(c){ if(!c) return "inc";
+  if(c.k==="y") return c.y<0?"red":"blk";
+  if(c.k==="inc") return "inc";
+  if(c.k==="pen") return "yel";
+  if(c.k==="b"||c.k==="td") return "brk";
+  if(c.k==="tb"||c.k==="ok"||c.k==="keep"||c.k==="ret") return "blk";
+  return "red"; }
+function miniBox(c){ return `<span class="mini ${boxCls(c)}">${esc(c&&c.k==="keep"?"KEEP":c&&c.k==="lost"?"LOST":boxTxt(c))}</span>`; }
+const FOLNAME={QT:"Quarterback trapped",B:"Breakaway",FUM:"Fumble recovery",INT:"Interception return"};
+const FOLCOL={QT:"QT column",B:"Breakaway column",FUM:"Fumble line",INT:"Interception Return column"};
+function lookupLine(l){
+  if(!l||l.R==null) return "";
+  let h="";
+  if(l.pk&&PLAYS[l.pk]&&l.o){
+    h+=`<span class="lk">${miniBox(l.o)}${TEAMS[l.team].short} chart · ${esc(PLAYS[l.pk].name)} · roll ${l.R}</span>`;
+    if(l.d) h+=`<span class="lk">${miniBox(l.d)}Defense ${esc(DEFS[l.dk].short)} · roll ${l.D}</span>`;
+    if(l.why) h+=`<span class="lk why">${esc(l.why)}</span>`;
+  } else if(l.o){ h+=`<span class="lk">${miniBox(l.o)}${esc(playName(l.pk))} · roll ${l.R}</span>`; }
+  if(l.fol) h+=`<span class="lk">${miniBox(l.fol.box)}${esc(FOLCOL[l.fol.kind])} · roll ${l.fol.R}</span>`;
+  return h?`<div class="lookup">${h}${l.pk&&PLAYS[l.pk]?`<button class="btn ghost sm" data-act="lookup">Show on the charts</button>`:""}</div>`:"";
 }
 function resultBanner(){
   const l=S.last; if(!l) return `<div class="result"><div class="big">Super Bowl LVII, replayed with dice</div></div>`;
   const showDef = l.D!=null && l.dice && l.dice.d1;
-  return `<div class="result ${l.cls||""}" aria-live="polite">${l.dice&&l.dice.t?diceHTML(l.dice,showDef):""}<div class="big">${esc(l.txt)}</div>${l.R?`<div class="tag">Off ${l.R}${showDef?` · Def ${l.D}`:""}</div>`:""}${lookupLine(l)}</div>`;
+  const fd = l.fol&&l.fol.dice?`<span class="tag">${esc(FOLNAME[l.fol.kind])}</span>${diceHTML(l.fol.dice,false)}`:"";
+  return `<div class="result ${l.cls||""} ${l.wait?"waitroll":""}" aria-live="polite"><div class="dicewrap">${l.dice&&l.dice.t?diceHTML(l.dice,showDef):""}${fd}</div><div class="big">${esc(l.txt)}</div>${lookupLine(l)}</div>`;
 }
 function nm(p){ return p?esc(p.name):"the admin"; }
-// Text describing who the game is waiting on
 function waitingText(){
   const ns=needs(S); if(S.paused) return "Game paused by the admin.";
   if(!ns.length) return "";
   return ns.map(n=>{ if(n.kind==="start") return "Waiting for the admin to start the game."; if(n.kind==="toss") return "Waiting for the admin to flip the coin.";
     const w=whoFor(S,n); const T=TEAMS[n.team].name;
+    if(n.side==="fol") return `${nm(w)} rolls the ${T} ${FOLNAME[n.fol].toLowerCase()} roll.`;
     return n.kind==="call"?`${nm(w)} is calling the ${T} ${n.side==="off"?"play":"defense"}.`:n.kind==="pat"?`${nm(w)} picks the ${T} try after the TD.`:`${nm(w)} rolls the ${T} ${n.side==="off"?"offense":"defense"} dice.`; }).join(" ");
 }
 
@@ -594,10 +839,13 @@ function actionCard(n,asAdmin){
     let sheet="";
     if(n.side==="off"){
       const dist=toGoal(s)+17; const tempo=ui.tempo||"normal";
-      sheet=`<div class="tag">Tempo (how much clock runs before the snap)</div><div class="seg">${Object.keys(TEMPO).map(k=>`<button class="${tempo===k?"on":""}" data-act="tempo" data-k="${k}">${TEMPO[k].name}<small>${s.running?`−${TEMPO[k].secs}s`:"clock stopped"}</small></button>`).join("")}</div>
-      <div class="plays">${OFF_ORDER.map(k=>{const r=RATE[n.team][k];return `<button class="play ${sel===k?"sel":""}" data-act="pick" data-key="${key}" data-play="${k}"><b>${PLAYS[k].name}</b><span class="s">${PLAYS[k].desc}</span>${r>0?'<span class="stars">★ team strength</span>':""}</button>`;}).join("")}
+      const hud=s.running?(TEMPO[tempo]||TEMPO.normal).secs:0, use=hud+10, left=s.clock-use;
+      const warn=s.running&&s.clock-hud<=0?`<div class="clockwarn bad">⚠ The clock runs out before the snap. Call a timeout or pick Hurry-up.</div>`:left<=0?`<div class="clockwarn">⚠ Last play of the ${s.q>=s.nq?"game":"quarter"}: this snap uses the rest of the clock.</div>`:"";
+      sheet=`<div class="clockbox"><div><b>${fmtClock(s.clock)}</b> left · clock ${s.running?"running":"stopped"}</div><div class="small">This snap uses <b>${use}s</b>${s.running?` (${hud}s huddle + 10s play)`:" (10s play)"}, leaving <b>${fmtClock(Math.max(0,left))}</b>. If the play ends in bounds, the clock keeps running and the next huddle costs more.</div>${warn}</div>
+      <div class="tag">Tempo (how much clock runs before the snap)</div><div class="seg">${Object.keys(TEMPO).map(k=>`<button class="${tempo===k?"on":""}" data-act="tempo" data-k="${k}">${TEMPO[k].name}<small>${s.running?`−${TEMPO[k].secs}s`:"clock stopped"}</small></button>`).join("")}</div>
+      <div class="plays">${OFF_ORDER.map(k=>{const r=RATE[n.team][k];return `<button class="play ${sel===k?"sel":""}" data-act="pick" data-key="${key}" data-play="${k}"><b>${PLAYS[k].n} · ${PLAYS[k].name}</b><span class="s">${PLAYS[k].desc}</span><span class="s clk">⏱ stops the clock ~${clockStopPct(n.team,k)}%</span>${r>0?'<span class="stars">★ team strength</span>':""}</button>`;}).join("")}
       ${s.phase==="play"?`<button class="play ${sel==="PUNT"?"sel":""}" data-act="pick" data-key="${key}" data-play="PUNT"><b>Punt</b><span class="s">${s.down===4?"Smart on 4th down":"Any down"}</span></button>
-      <button class="play ${sel==="FG"?"sel":""}" data-act="pick" data-key="${key}" data-play="FG" ${dist<=60?"":"disabled"}><b>Field Goal</b><span class="s">${dist<=60?`${dist} yds · need ${fgNeed(dist)}+`:"Too far"}</span></button>
+      <button class="play ${sel==="FG"?"sel":""}" data-act="pick" data-key="${key}" data-play="FG" ${dist<=64?"":"disabled"}><b>Field Goal</b><span class="s">${dist<=64?`${dist} yds · ${fgChance(dist,n.team)}% chance`:"Too far"}</span></button>
       <button class="play ${sel==="SPIKE"?"sel":""}" data-act="pick" data-key="${key}" data-play="SPIKE"><b>Spike</b><span class="s">Stop the clock, lose a down</span></button>
       <button class="play ${sel==="KNEEL"?"sel":""}" data-act="pick" data-key="${key}" data-play="KNEEL"><b>Kneel</b><span class="s">Lose 1, keep clock running</span></button>`:""}</div>`;
     } else {
@@ -608,14 +856,15 @@ function actionCard(n,asAdmin){
       <button class="btn primary big" data-act="send" data-a='${esc(a)}' ${sel?"":"disabled"}>Lock in ${sel?esc(playName(sel)):"call"}</button></div>`;
   }
   if(n.kind==="roll"){
-    const off=n.side==="off"; const md=ui.md; const keys=off?["t","a","b"]:["d1","d2"];
+    const fol=n.side==="fol"; const off=n.side!=="def"; const md=ui.md; const keys=off?["t","a","b"]:["d1","d2"];
     const ready=keys.every(k=>md[k]);
-    const face=(k,label)=>`<label>${label}<span class="faces">${[1,2,3,4,5,6].map(v=>`<button data-act="face" data-k="${k}" data-v="${v}" class="${md[k]===v?"on":""}" aria-label="${label} ${v}">${v}</button>`).join("")}</span></label>`;
-    const what=s.phase==="kickoff"?"kickoff":S.pend.oc==="PUNT"?"punt":S.pend.oc==="FG"?"field goal":S.pend.pat==="XP"?"extra point":off?"offense":"defense";
-    const manual=ui.manual?`<div class="manual">${off?face("t","Tens die (1–2 = 10, 3–4 = 20, 5–6 = 30)")+face("a","Ones die A (face − 1)")+face("b","Ones die B (face − 1)"):face("d1","Defense die 1")+face("d2","Defense die 2")}</div>
+    const face=(k,label,cls,map,mul)=>`<label><span><span class="die ${cls} sm"></span> ${label}</span><span class="faces">${[1,2,3,4,5,6].map(v=>`<button data-act="face" data-k="${k}" data-v="${v}" class="${md[k]===v?"on":""}" aria-label="${label} face ${v}">${v}<small>=${map[v-1]*(mul||1)}</small></button>`).join("")}</span></label>`;
+    const what=fol?FOLNAME[n.fol].toLowerCase()+" roll":s.phase==="kickoff"?"kickoff":S.pend.oc==="PUNT"?"punt":S.pend.oc==="FG"?"field goal":S.pend.pat==="XP"?"extra point":off?"offense":"defense";
+    const folNote=fol?`<div class="small">${n.fol==="QT"?"The pass rush got there. Roll to see what the quarterback does (QT column).":n.fol==="B"?"He's loose! Roll to see how far he goes (Breakaway column).":n.fol==="FUM"?"Ball's on the ground! Roll the fumble line: 10–28 you keep it.":"Picked off! Roll your Interception Return column."}</div>`:"";
+    const manual=ui.manual?`<div class="manual">${off?face("t","Black die","blk",BLACK,10)+face("a","White die","wht",WHITE)+face("b","Blue die","blu",BLUE):face("d1","Red die","red",RED)+face("d2","Green die","grn",GREEN)}</div>
       <button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side,dice:Object.fromEntries(keys.map(k=>[k,md[k]||0]))}))}' ${ready?"":"disabled"}>Submit my dice</button>`:
-      `<button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side}))}'>🎲 Roll ${off?"3":"2"} dice</button>`;
-    return `<div class="panel ${T.cls} turn">${tag}<h2>Your roll: ${T.name} ${what}</h2><label class="row small muted"><input type="checkbox" id="manualdice" ${ui.manual?"checked":""}> I'm rolling real dice</label>${manual}</div>`;
+      `<button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side}))}'>🎲 Roll ${off?"black, white & blue":"red & green"}</button>`;
+    return `<div class="panel ${T.cls} turn">${tag}<h2>Your roll: ${T.name} ${what}</h2>${folNote}<label class="row small muted"><input type="checkbox" id="manualdice" ${ui.manual?"checked":""}> I'm rolling real dice</label>${manual}</div>`;
   }
   return "";
 }
@@ -631,8 +880,8 @@ function rosterCol(team){
 function joinBox(){
   const m=me(); const name=ui.name!=null?ui.name:(m?m.name:(localGet("tb.name")||""));
   return `<div class="panel"><h2>${m?"Your team":"Join a team"}</h2>
-    <label class="small muted" for="pname">Your name</label><input id="pname" class="inp" maxlength="18" value="${esc(name)}" placeholder="e.g. Grandpa Joe" autocomplete="off">
-    <div class="row"><button class="btn team-kc ${m&&m.team==="KC"?"on":""}" data-act="join" data-team="KC">Join Chiefs</button><button class="btn team-phi ${m&&m.team==="PHI"?"on":""}" data-act="join" data-team="PHI">Join Eagles</button>${m?`<button class="btn ghost small" data-act="send" data-a='{"type":"leave"}'>Leave team</button>`:""}</div>
+    <label class="small muted" for="pname">Your name</label><input id="pname" class="inp" maxlength="18" value="${esc(name)}" autocomplete="off">
+    <div class="row btns"><button class="btn team-kc ${m&&m.team==="KC"?"on":""}" data-act="join" data-team="KC">Join Chiefs</button><button class="btn team-phi ${m&&m.team==="PHI"?"on":""}" data-act="join" data-team="PHI">Join Eagles</button>${m?`<button class="btn ghost small" data-act="send" data-a='{"type":"leave"}'>Leave team</button>`:""}</div>
     <div class="small muted">Turns rotate in the order players joined. The admin can reorder.</div></div>`;
 }
 function lobbyPanel(){
@@ -642,94 +891,103 @@ function settingsBox(){
   const s=S; const locked=!(s.phase==="lobby"||s.phase==="toss");
   return `<div class="panel"><h2>Game length</h2><div class="row"><label class="small muted" for="nq">Quarters</label><select id="nq" class="btn">${NQS.map(n=>`<option value="${n}" ${s.nq===n?"selected":""}>${n}</option>`).join("")}</select>
    <label class="small muted" for="qmin">Minutes per quarter</label><select id="qmin" class="btn" ${locked?"disabled":""}>${QMINS.map(n=>`<option value="${n}" ${s.qmin===n?"selected":""}>${n} min</option>`).join("")}</select></div>
-   <div class="small muted">About ${Math.round(s.nq*s.qmin*3.5)} snaps and kicks, roughly ${Math.round(s.nq*s.qmin*3.5*0.6/5)*5} minutes at the table.</div></div>`;
+   <div class="small muted">About ${Math.round(s.nq*s.qmin*2)} snaps and kicks, roughly ${Math.round(s.nq*s.qmin*2*40/60/5)*5} minutes at the table. 15 minutes is the real Paydirt length; pick 5 or 8 for a quicker game.</div></div>`;
 }
 
 // ---------- Playbook / rules ----------
 // ---------- Paydirt-style charts ----------
-// One box on the offense chart: what the team's chart says for this play and roll.
-function offBox(team,pk,R){
-  const x=cell(team,pk,R); const p=PLAYS[pk];
-  if(x.k==="pen") return x.y>0?{c:"red",t:"PI",s:"+15 1st"}:{c:"red",t:"PEN",s:"−10"};
-  if(x.k==="int") return {c:"red",t:"INT"};
-  if(x.k==="fum") return {c:"red",t:"FUM"};
-  if(x.k==="inc") return {c:"inc",t:"inc"};
-  const ob = x.y>0 && (pk==="SL" || ((pk==="RO"||pk==="SP"||pk==="SC") && (R%10)%2===1));
-  return {c:x.brk?"brk":"blk",t:(x.y>0?"+":x.y<0?"−":"")+Math.abs(x.y),s:x.brk?"BREAK":"",ob};
+function boxTD(c,hi){ const t=c&&c.k==="keep"?"KEEP":c&&c.k==="lost"?"LOST":boxTxt(c); return `<td class="bx ${boxCls(c)}${hi?" hi":""}"><b>${esc(t)}</b>${c&&c.ob?`<u>*</u>`:""}</td>`; }
+const pct=n=>(Math.round(n/216*1000)/10)+"%";
+// Odds line under each offense column, straight from the boxes.
+function colOdds(team,pk){
+  let comp=0,yd=0,inc=0,qt=0,to=0,b=0,pen=0; ROLLS.forEach(R=>{ const c=CHART[team][pk][R],w=OFFP[R];
+    if(c.k==="y"){comp+=w;yd+=w*c.y;} else if(c.k==="inc")inc+=w; else if(c.k==="qt")qt+=w; else if(c.k==="int"||c.k==="f")to+=w; else if(c.k==="b")b+=w; else pen+=w; });
+  const pass=PLAYS[pk].cat==="pass";
+  return `${pass?`${pct(comp)} catch`:`avg ${(yd/comp).toFixed(1)}`}<br>${pass?`avg ${(yd/comp).toFixed(1)}`:`${pct(to)} fum`}${pass?`<br>${pct(inc)} inc<br>${pct(qt)} QT<br>${pct(to)} INT`:""}<br>${pct(b)} B`;
 }
-function boxHTML(b,hi){ return `<td class="bx ${b.c}${hi?" hi":""}"><b>${b.t}</b>${b.s?`<i>${b.s}</i>`:""}${b.ob?`<u>OB</u>`:""}</td>`; }
 function offChart(team,hl){
-  const rows=[]; for(let R=10;R<=40;R++) rows.push(R);
-  return `<div class="pd"><table><thead><tr><th class="rk">Roll</th>${OFF_ORDER.map(pk=>`<th class="${hl&&hl.pk===pk?"hc":""}">${PLAYS[pk].name}${RATE[team][pk]>0?" ★":""}</th>`).join("")}</tr></thead><tbody>
-  ${rows.map(R=>`<tr class="${R%10===0?"dec":""}${hl&&hl.R===R?" hr":""}"><th class="rk">${R}</th>${OFF_ORDER.map(pk=>boxHTML(offBox(team,pk,R),hl&&hl.R===R&&hl.pk===pk)).join("")}</tr>`).join("")}
+  const cols=OFF_ORDER.concat(["QT","B"]);
+  const name=k=>PLAYS[k]?`${PLAYS[k].n} · ${PLAYS[k].name}${RATE[team][k]>0?" ★":""}`:k==="QT"?"QT · QB trapped":"B · Breakaway";
+  return `<div class="pd"><table><thead><tr><th class="rk">Roll</th><th class="pr">Odds</th>${cols.map(k=>`<th class="${hl&&(hl.pk===k||hl.fol===k)?"hc":""} ${PLAYS[k]?"":"xc"}">${name(k)}</th>`).join("")}</tr></thead><tbody>
+  ${ROLLS.map(R=>`<tr class="${R%10===0?"dec":""}${hl&&(hl.R===R||hl.FR===R)?" hr":""}"><th class="rk">${R}</th><td class="pr">${OFFP[R]}</td>${cols.map(k=>boxTD(CHART[team][k][R],hl&&((hl.R===R&&hl.pk===k)||(hl.FR===R&&hl.fol===k)))).join("")}</tr>`).join("")}
+  <tr class="odds"><th class="rk">Odds</th><td class="pr">of 216</td>${OFF_ORDER.map(k=>`<td>${colOdds(team,k)}</td>`).join("")}<td></td><td></td></tr>
   </tbody></table></div>`;
 }
-// One box on the defense chart: what this defense roll does to this play.
-function defBox(pk,dk,D){
-  const p=PLAYS[pk]; const M=GRID[pk][dk]; const mult=p.cat==="sneak"?1:2;
-  if(D>=12) return M<0?{c:"red",t:p.cat==="pass"?"INT":"FUM",s:"takeaway"}:{c:"red",t:p.cat==="pass"?"SACK":"STUFF",s:p.cat==="pass"?"−7":"−3"};
-  if(dk==="BL"&&p.cat==="pass"&&D>=10) return {c:"red",t:"SACK",s:"−7"};
-  const v=M*mult+defAdj(D);
-  return {c:v>0?"plus":"blk",t:(v>0?"+":v<0?"−":"")+Math.abs(v),s:D===2?"min +5":""};
+function stChart(team,hl){
+  const cols=[["KR","Kickoff return"],["PU","Punt (net)"],["FG","Field goal (good up to)"],["XP","Extra point"],["IR","Interception return"],["FM","Fumble recovery"]];
+  const cellOf=(k,R)=>k==="FM"?{k:FUMKEEP(R)?"keep":"lost"}:CHART[team][k][R];
+  return `<div class="pd"><table><thead><tr><th class="rk">Roll</th>${cols.map(([k,n])=>`<th>${n}</th>`).join("")}</tr></thead><tbody>
+  ${ROLLS.map(R=>`<tr class="${R%10===0?"dec":""}"><th class="rk">${R}</th>${cols.map(([k])=>boxTD(cellOf(k,R),false)).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 function defChart(dk,hl,team){
-  const Ds=[2,3,4,5,6,7,8,9,10,11,12];
-  return `<div class="pd dc"><table><thead><tr><th class="rk">Play</th>${Ds.map(D=>`<th class="${hl&&hl.D===D?"hc":""}">${D}</th>`).join("")}</tr></thead><tbody>
-  ${OFF_ORDER.map(pk=>`<tr class="${hl&&hl.pk===pk?"hr":""}"><th class="rk">${PLAYS[pk].name}</th>${Ds.map(D=>boxHTML(defBox(pk,dk,D),hl&&hl.pk===pk&&hl.D===D)).join("")}</tr>`).join("")}
+  const Ds=[1,2,3,4,5];
+  return `<div class="pd dc"><table><thead><tr><th class="rk">Play</th>${Ds.map(D=>`<th class="${hl&&hl.D===D?"hc":""}">${D}<small>${Math.round(DEFP[D]/36*100)}%</small></th>`).join("")}</tr></thead><tbody>
+  ${OFF_ORDER.map(pk=>`<tr class="${hl&&hl.pk===pk?"hr":""}"><th class="rk">${PLAYS[pk].n} · ${PLAYS[pk].name}</th>${Ds.map(D=>boxTD(defBox(pk,dk,D),hl&&hl.pk===pk&&hl.D===D)).join("")}</tr>`).join("")}
   </tbody></table></div>`;
-}
-// How the last play was looked up, step by step.
-function lookupLine(l){
-  if(!l||!l.pk||!PLAYS[l.pk]||!l.dk||l.R==null) return "";
-  const ob=offBox(l.team,l.pk,l.R); const db=defBox(l.pk,l.dk,l.D);
-  return `<div class="lookup"><span class="lk"><span class="mini ${ob.c}">${ob.t}</span>${TEAMS[l.team].short} chart, ${esc(PLAYS[l.pk].name)}, roll ${l.R}</span>${ob.c==="red"&&ob.t!=="FUM"&&ob.t!=="INT"?"":`<span class="lk"><span class="mini ${db.c}">${db.t}</span>${esc(DEFS[l.dk].name)}, defense roll ${l.D}</span>`}<button class="btn ghost sm" data-act="lookup">Show on the charts</button></div>`;
 }
 function playbookView(){
   const m=me(); const team=ui.pbTeam||(m?m.team:"KC"); const def=other(team);
-  const dk=ui.pbDef||"BA"; const l=S&&S.last;
-  const hlO=ui.pbHL&&l&&l.team===team&&l.pk&&PLAYS[l.pk]?{R:l.R,pk:l.pk}:null;
-  const hlD=ui.pbHL&&l&&l.team===team&&l.dk===dk&&PLAYS[l.pk]?{D:l.D,pk:l.pk}:null;
+  const dk=ui.pbDef||"A"; const l=S&&S.last; const sub=ui.pbSub||"off";
+  const okL=ui.pbHL&&l&&l.team===team&&l.pk&&PLAYS[l.pk];
+  const hlO=okL?{R:l.R,pk:l.pk,FR:l.fol&&(l.fol.kind==="QT"||l.fol.kind==="B")?l.fol.R:null,fol:l.fol?l.fol.kind:null}:null;
+  const hlD=okL&&l.dk===dk?{D:l.D,pk:l.pk}:null;
   return `<div class="seg wide">${["KC","PHI"].map(t=>`<button class="${team===t?"on":""}" data-act="pb" data-t="${t}">${TEAMS[t].name} on offense</button>`).join("")}</div>
-   ${ui.pbHL&&l&&l.pk?`<div class="panel slim">${lookupLine(l).replace(/<button[^>]*>.*?<\/button>/,`<button class="btn ghost sm" data-act="pbclear">Clear highlight</button>`)}</div>`:""}
-   <div class="panel ${TEAMS[team].cls}"><h2>1 · ${TEAMS[team].name} offense chart</h2>
-    <div class="small">Find the offense roll (10–40) down the left and the play called across the top. That box is the base result.</div>
-    ${offChart(team,hlO)}
-    <div class="legend small"><span><span class="mini blk">+6</span> yards</span><span><span class="mini red">INT</span> turnover or penalty</span><span><span class="mini brk">+45</span> breakaway</span><span><span class="mini inc">inc</span> incomplete</span><span><u>OB</u> out of bounds, clock stops</span><span>★ team strength</span></div></div>
-   <div class="panel"><h2>2 · ${TEAMS[def].name} defense chart</h2>
+   ${okL?`<div class="panel slim">${lookupLine(l).replace(/<button[^>]*>.*?<\/button>/,`<button class="btn ghost sm" data-act="pbclear">Clear highlight</button>`)}</div>`:""}
+   <div class="seg">${[["off","1 · Offense chart"],["def","2 · Defense chart"],["st","3 · Kicks & returns"],["how","How to read"]].map(([k,n])=>`<button class="${sub===k?"on":""}" data-act="pbsub" data-k="${k}">${n}</button>`).join("")}</div>
+   ${sub==="off"?`<div class="panel ${TEAMS[team].cls}"><h2>${TEAMS[team].name} offense chart</h2>
+    <div class="small">Find the offense roll (10–39) down the left and the play across the top. "Odds" is how many of the 216 dice combinations make that roll.</div>
+    ${offChart(team,hlO)}${legend()}</div>`:""}
+   ${sub==="def"?`<div class="panel"><h2>${TEAMS[def].name} defense chart</h2>
     <div class="seg">${DEF_ORDER.map(d=>`<button class="${dk===d?"on":""}" data-act="pbdef" data-d="${d}">${DEFS[d].name}</button>`).join("")}</div>
-    <div class="small">Pick the defense called, then find the play down the left and the defense roll (2–12) across the top. Add that box to the offense box.${DEFRATE[def][dk]?` ${TEAMS[def].name} ★ ${DEFS[dk].name}: add 1 to the defense roll.`:""}</div>
-    ${defChart(dk,hlD,team)}
-    <div class="legend small"><span><span class="mini plus">+2</span> offense gains</span><span><span class="mini blk">−3</span> offense loses</span><span><span class="mini red">SACK</span> replaces the offense box</span><span>min +5 = offside, offense gets at least 5</span></div>
-    <div class="small muted">Red boxes on the offense chart (penalties, INT, FUM) stand on their own: skip the defense chart. An inc stays incomplete unless a Blitz sack box comes up. A breakaway never gains less than its offense box.</div></div>`;
+    <div class="small">${esc(DEFS[dk].desc)}. Find the play down the left and the defense roll (red + green, 1–5) across the top.${DEFRATE[def][dk]?` ${TEAMS[def].name} ★ ${DEFS[dk].short}: add 1 to the defense roll (max 5).`:""}</div>
+    ${defChart(dk,hlD,team)}${legend()}</div>`:""}
+   ${sub==="st"?`<div class="panel ${TEAMS[team].cls}"><h2>${TEAMS[team].name} kicks & returns</h2><div class="small">Roll the offense dice (black + white + blue). The box is the final result; don't use the defense chart.</div>${stChart(team)}</div>`:""}
+   ${sub==="how"?howToRead():""}`;
+}
+function legend(){ return `<div class="legend small"><span><span class="mini blk">+6</span> yards</span><span><span class="mini red">−3</span> loss / turnover / QT</span><span><span class="mini yel">DEF 5</span> flag</span><span><span class="mini brk">B</span> breakaway</span><span><span class="mini inc">INC</span> incomplete</span><span>( ) overrules the other box</span><span><u>*</u> out of bounds / auto first down</span><span>★ team strength</span></div>`; }
+function howToRead(){
+  return `<div class="panel"><h2>Reading a play, step by step</h2><ol class="small">
+   <li><b>Offense box.</b> Offense chart, called play, offense roll (10–39).</li>
+   <li><b>Defense box.</b> Defense chart, the defense that was called, play row, defense roll (1–5).</li>
+   <li><b>Who wins:</b>
+    <ul><li>Both plain numbers: <b>add them</b>.</li>
+    <li>A number in ( ) beats a plain number on the other side. Two ( ) numbers: add them.</li>
+    <li>Offense <b>B, QT, INT, F</b> or a <b>flag</b>: the offense box overrules the defense.</li>
+    <li>Defense <b>QT</b> beats a plain offense number or an INC (the rush got there).</li>
+    <li>Offense <b>INC</b>: incomplete, unless the defense box is QT.</li></ul></li>
+   <li><b>Follow-up rolls.</b> QT → offense rolls again on its QT column (sack, throw-away, scramble or strip-sack). B → offense rolls on its Breakaway column. INT → the defense rolls on its Interception Return column. F → the team that fumbled rolls the fumble line (KEEP on 10–28, LOST on 29–39; 37–39 is returned, 39 all the way).</li>
+   <li><b>Flags.</b> OFF = against the offense, DEF/PI = against the defense. * = automatic first down. Otherwise replay the down. A flag never goes more than half the distance to the goal.</li></ol></div>
+   <div class="panel"><h2>Where the numbers come from</h2><p class="small">Each column was built to match the team's real 2022 season: Chiefs 66.8% completions, 8.1 yards per pass, 1.8% interceptions, 3.8% sacked, 4.7 per carry. Eagles 65.3%, 8.1, 1.7%, 7.6% sacked, 4.6 per carry. Where each kind of box sits comes from 30 real 1983 Paydirt team charts: on every play and roll we counted how often those charts put an incomplete, QT, flag, interception, fumble or breakaway there, and put ours in the same spots. That is why passes have long black runs of incompletes in the 30s, Long Pass most of all, and why flags gather on 19, 29 and 39 and the rare 10s. The yard boxes then rise smoothly: the common 30s and 20s hold everyday gains, the rare 10s the extremes.</p></div>`;
+}
+function diceKey(){
+  const row=(n,cls,map,note)=>`<tr><th><span class="die ${cls} sm">${n}</span></th>${map.map(v=>`<td>${v}</td>`).join("")}<td class="small muted">${note}</td></tr>`;
+  return `<div class="tbl"><table class="dk"><thead><tr><th>Die</th>${[1,2,3,4,5,6].map(f=>`<th>${f}</th>`).join("")}<th></th></tr></thead><tbody>
+   ${row("Black","blk",BLACK.map(v=>v*10),"tens (offense)")}${row("White","wht",WHITE,"ones (offense)")}${row("Blue","blu",BLUE,"ones (offense)")}${row("Red","red",RED,"defense")}${row("Green","grn",GREEN,"defense")}</tbody></table></div>`;
 }
 function rulesView(){
   const s=S;
   return `<div class="panel"><h2>How a play works</h2><ol class="small">
-   <li><b>Call.</b> The offense's play caller picks a play and a tempo. The defense's play caller picks a formation. Neither sees the other's call.</li>
-   <li><b>Roll.</b> The offense's dice roller rolls 3 dice: one tens die and two ones dice, making 10–40. The defense's roller rolls 2 dice (2–12).</li>
-   <li><b>Result.</b> The offense roll is looked up on the team chart. The matchup and defense roll adjust it. The app moves the ball, the chains and the clock.</li>
+   <li><b>Call.</b> Both play callers pick secretly: offense picks one of 9 plays and a tempo; defense picks formation A–F.</li>
+   <li><b>Roll.</b> Offense rolls black + white + blue (10–39). Defense rolls red + green (1–5).</li>
+   <li><b>Look up.</b> Offense box from the offense chart, defense box from the defense chart, then the "who wins" rules (Playbook → How to read). The app does this and shows both boxes.</li>
+   <li><b>Follow-up roll</b> when the result is QT, B, an interception or a fumble.</li>
    <li><b>Rotate.</b> After each play, the next player on each team becomes the caller, and the roller moves down one too.</li></ol></div>
-  <div class="panel"><h2>Using normal 1–6 dice</h2>
-   <div class="tbl"><table><thead><tr><th>Die shows</th><th>As the tens die</th><th>As a ones die</th><th>Chance</th></tr></thead><tbody>
-   ${[1,2,3,4,5,6].map(f=>`<tr><td>${f}</td><td>${tensOf(f)*10}</td><td>${f-1}</td><td>1 in 6</td></tr>`).join("")}</tbody></table></div>
-   <p class="small">Pick one die color as the tens die. Example: tens die 4, ones dice 6 and 2 → 20 + 5 + 1 = <b>26</b>. Each tens value (10, 20, 30) comes up 1 time in 3, and the two ones dice add to 0–10 with 5 most common, so you get the same odds as the classic game's special dice.</p></div>
+  <div class="panel"><h2>Using normal dice</h2><div class="small">Use five dice of different colors. Each face reads as the number in the table. This gives the exact odds of Paydirt's special dice.</div>${diceKey()}
+   <p class="small">Example: black 4 (30), white 3 (2), blue 6 (4) → <b>36</b>. Red 5 (2) + green 1 (0) → <b>2</b>. No colored dice? Tap "Roll" and let the app do it.</p></div>
   <div class="panel"><h2>Clock management</h2><ul class="small">
    <li>${s.nq} quarter${s.nq>1?"s":""} of ${s.qmin} minutes. Halftime resets timeouts to 3 per team.</li>
-   <li>If the clock is running, time runs off before the snap: Normal huddle −35s, Hurry-up −12s, Run the clock −40s.</li>
-   <li>Each play also takes 2–8 seconds (runs 5–6s, long passes 8s, punts 8s).</li>
-   <li><b>Clock stops</b> after an incomplete pass, out of bounds, a penalty, a turnover, a score, a punt, a field goal try, a timeout, or a spike.</li>
-   <li>Out of bounds: every Sideline Pass that gains yards, and Outside Run, Short Pass or Screen gains when the offense roll ends in an odd number.</li>
+   <li>Time runs in 10-second boxes, like Paydirt. Every snap or kick uses 1 box (10s).</li>
+   <li>If the clock is still running, the huddle uses more: Normal 3 boxes (30s), Hurry-up 1 box (10s), Run the clock 4 boxes (40s). So a run that stays in bounds costs 40s with a normal huddle.</li>
+   <li><b>Clock stops</b> after an incomplete pass, out of bounds (*), a flag, a turnover, a score, a punt, a field goal try, a timeout, or a spike.</li>
    <li><b>Two-minute warning</b> stops the clock at 2:00 in Q${s.nq>=2?s.nq/2:"-"} and Q${s.nq}.</li>
-   <li>If the clock would hit 0:00 before the snap, the quarter ends with no play. Run the clock or kneel to finish a game you lead.</li>
+   <li>If the clock would hit 0:00 before the snap, the quarter ends with no play.</li>
    <li>Any player can call their team's timeout while the clock is running, before the dice are rolled.</li></ul></div>
   <div class="panel"><h2>Kicks and scoring</h2><ul class="small">
-   <li>Kickoff (3 dice): 10s short return (own 12–22), 20s touchback at the 25, 30s good return (own 20–50), 40 returned for a TD.</li>
-   <li>Punt: about 36 yards net, ± by the roll. 10 is blocked. 40 is a long return. Into the end zone is a touchback at the 20.</li>
-   <li>Field goal distance = yards to the goal line + 17. Need: up to 29 yds 13+, 30–39 17+, 40–45 21+, 46–50 25+, 51–55 30+, 56–60 35+.</li>
-   <li>Extra point misses only on 10–12. Two-point try is a normal play from the 2; gain 2+ to score.</li>
-   <li>Safety: 2 points and a free kick. Tied at the end: overtime, next score wins.</li>
-   <li>Offense roll 20 = holding (−10, replay down). 30 = pass interference on the defense (+15, first down).</li></ul></div>
-  <div class="panel"><h2>About the original</h2><p class="small">This is a homemade tribute to the classic 1970s–90s sports dice games, where each real team got its own chart built from its stats. The charts here are inspired by Super Bowl LVII (Feb 12, 2023): Kansas City 38, Philadelphia 35. The Eagles' strengths are the run game and the QB push. The Chiefs' are short and quick passes.</p></div>`;
+   <li>Kickoffs, punts, field goals and extra points: roll the offense dice and read the Kicks & returns chart. That box is final.</li>
+   <li>Field goal distance = yards to the goal line + 17. It's good if the box is at least that far.</li>
+   <li>Extra point: red box (10–11) is no good. Two-point try is a normal play from the 2.</li>
+   <li>Safety: 2 points and a free kick. Tied at the end: overtime, next score wins.</li></ul></div>
+  <div class="panel"><h2>About the original</h2><p class="small">A homemade tribute to Paydirt (Sports Illustrated / Avalon Hill), where each real team got its own chart built from its stats. Same dice, same 9 plays, same A–F defenses and the same "who wins" rules. The charts here are built from the 2022 Chiefs and Eagles, the Super Bowl LVII teams (KC 38, PHI 35).</p></div>`;
 }
 
 // ---------- Admin ----------
@@ -746,7 +1004,7 @@ function shareURL(){ const base=location.href.split("#")[0]; return net.via==="d
 function shareBox(){
   if(net.via==="db") return `<div class="share"><div><div class="tag">Share this page's link</div></div></div>`;
   const url=shareURL();
-  return `<div class="share"><div class="qr" id="qr" aria-label="QR code to join"></div><div style="min-width:0"><div class="tag">Game code</div><div class="code">${esc(S.code)}</div><div class="small url">${esc(url)}</div><div class="row"><button class="btn small" data-act="copy">Copy link</button><button class="btn small" data-act="tvopen">Open TV view</button></div></div></div>`;
+  return `<div class="share"><div class="qr" id="qr" aria-label="QR code to join"></div><div style="min-width:0"><div class="tag">Game code</div><div class="code">${esc(S.code)}</div><div class="small url">${esc(url)}</div><div class="row"><button class="btn small" data-act="copy">Copy link</button><button class="btn small" data-act="tvopen">Open TV view</button><a class="btn small" href="card.html#${esc(S.code)}" target="_blank" rel="noopener">Quick card</a></div></div></div>`;
 }
 function drawQR(){
   const el=document.getElementById("qr"); if(!el||!window.qrcode) return;
@@ -763,16 +1021,17 @@ function tvView(){
 // ---------- Home (not in a game yet) ----------
 function homeView(){
   const code=(ui.code!=null?ui.code:(location.hash||"").replace("#","")).toUpperCase().slice(0,4);
-  const canResume=(()=>{ const h=loadHost(); return h&&h.v===3&&h.admin===myId&&h.phase!=="over"?h:null; })();
-  return `<div class="hero"><span class="tag">Super Bowl LVII · Feb 12, 2023</span>
-    <h1><span class="kc">Chiefs</span> 38<br><span class="phi">Eagles</span> 35</h1>
-    <div class="muted">The Thanksgiving dice football rematch. Everyone plays on their own phone.</div></div>
+  const canResume=(()=>{ const h=loadHost(); return h&&h.v===4&&h.admin===myId&&h.phase!=="over"?h:null; })();
+  return `<div class="hero"><div class="tag">Super Bowl LVII rematch · Feb 12, 2023</div>
+    <div class="herobox"><div class="hl kc"><span>Chiefs</span><b>38</b></div><div class="hl phi"><span>Eagles</span><b>35</b></div></div>
+    <div class="muted">Paydirt-style dice football. Everyone plays on their own phone.</div></div>
    <div class="panel"><h2>Join a game</h2><label class="small muted" for="code">Game code</label>
     <input id="code" class="inp code-inp" maxlength="4" value="${esc(code)}" placeholder="ABCD" autocomplete="off" autocapitalize="characters">
-    <div class="row"><button class="btn primary big" data-act="joincode">Join as a player</button><button class="btn" data-act="joincode" data-tv="1">Join as TV / cast screen</button></div></div>
+    <div class="stack"><button class="btn primary" data-act="joincode">Join as a player</button><button class="btn" data-act="joincode" data-tv="1">Join as TV / cast screen</button></div></div>
    <div class="panel"><h2>Run the game (admin)</h2><div class="small muted">Start a new game on your phone. Everyone else joins with the code.</div>
-    <div class="row"><button class="btn" data-act="host">Start a new game</button>${canResume?`<button class="btn primary" data-act="resume">Resume game ${esc(canResume.code)} (${canResume.score.KC}–${canResume.score.PHI})</button>`:""}</div></div>
-   <div class="panel"><h2>One phone only?</h2><div class="small muted">Play everything on this device and pass it around.</div><button class="btn" data-act="local">Play on this device</button></div>
+    <div class="stack">${canResume?`<button class="btn primary" data-act="resume">Resume game ${esc(canResume.code)} (KC ${canResume.score.KC}, PHI ${canResume.score.PHI})</button>`:""}<button class="btn ${canResume?"":"primary"}" data-act="host">Start a new game</button></div></div>
+   <div class="panel"><h2>One phone only?</h2><div class="small muted">Play everything on this device and pass it around.</div><div class="stack"><button class="btn" data-act="local">Play on this device</button></div></div>
+   <div class="stack"><a class="btn ghost" href="card.html">Quick card: QR code, dice and rules</a></div>
    ${!window.Peer?`<div class="note small">Live sync didn't load. Reload, or use "Play on this device".</div>`:""}`;
 }
 
@@ -783,15 +1042,17 @@ function tabs(){
 }
 function headerBar(){
   const m=me(); const st=mode==="local"?"One device":net.live?"Live":"Offline";
-  return `<div class="topbar"><div class="row"><span class="brand">TURKEY BOWL <b>LVII</b></span>${m?`<span class="chip ${TEAMS[m.team].cls}">${esc(m.name)} · ${TEAMS[m.team].short}</span>`:ui.spectator?`<span class="chip">TV</span>`:""}</div><span class="sync ${net.live||mode==="local"?"on":"off"}" title="${esc(net.status)}">● ${st}${S&&S.code&&net.via==="peer"?" · "+esc(S.code):""}</span></div>${net.status&&!net.live&&mode!=="local"?`<div class="note small">${esc(net.status)}</div>`:""}${ui.err?`<div class="note small err">${esc(ui.err)}</div>`:""}`;
+  return `<div class="topbar"><div class="row"><span class="brand">TURKEY BOWL <b>LVII</b></span>${m?`<span class="chip ${TEAMS[m.team].cls}">${esc(m.name)} · ${TEAMS[m.team].short}</span>`:ui.spectator?`<span class="chip">TV</span>`:""}</div><span class="sync ${net.live||mode==="local"?"on":"off"}" title="${esc(net.status)}">● ${st}${S&&S.code&&net.via==="peer"?" · "+esc(S.code):""}</span></div>${net.status&&!net.live&&mode!=="local"?`<div class="note small">${esc(net.status)}</div>`:""}${ui.err?`<div class="note small err">${esc(ui.err)}</div>`:""}${mode==="client"&&!net.live&&S&&net.lostAt&&Date.now()-net.lostAt>20000?`<div class="note small">Admin's phone gone for good? Any phone can pick the game up from its last play. <button class="btn small" data-act="confirm" data-what="takeover">Take over hosting</button></div>`:""}`;
 }
 function confirmModal(){
   const c=ui.confirm; if(!c) return "";
-  const msgs={newgame:["Restart the game?","The score, clock and play log reset for everyone. Players stay on their teams."],pause:["Pause the game?","Nobody can call or roll until you resume."],undo:["Undo the last play?","The field, score and clock go back one play."],kick:["Remove this player?","They can join again with the code."],timeout:["Call a timeout?",`Stops the clock. ${TEAMS[c.team]?TEAMS[c.team].name:""} will have ${S&&c.team?S.to[c.team]-1:0} left this half.`]};
+  const msgs={newgame:["Restart the game?","The score, clock and play log reset for everyone. Players stay on their teams."],pause:["Pause the game?","Nobody can call or roll until you resume."],undo:["Undo the last play?","The field, score and clock go back one play."],kick:["Remove this player?","They can join again with the code."],takeover:["Take over hosting?","This phone becomes the host, with a new game code, starting from the last play it saw. Everyone else rejoins with the new code and keeps their team."],timeout:["Call a timeout?",`Stops the clock. ${TEAMS[c.team]?TEAMS[c.team].name:""} will have ${S&&c.team?S.to[c.team]-1:0} left this half.`]};
   const [h,p]=msgs[c.what]||["Are you sure?",""];
-  return `<div class="cover" role="dialog" aria-modal="true" aria-labelledby="cfh"><div class="inner modal"><h2 id="cfh">${h}</h2><p class="muted">${esc(p)}</p><div class="row"><button class="btn danger big" data-act="confirmyes">Yes, ${c.what==="timeout"?"call timeout":c.what==="newgame"?"restart":c.what}</button><button class="btn big" data-act="confirmno">No, go back</button></div></div></div>`;
+  return `<div class="cover" role="dialog" aria-modal="true" aria-labelledby="cfh"><div class="inner modal"><h2 id="cfh">${h}</h2><p class="muted">${esc(p)}</p><div class="row"><button class="btn danger big" data-act="confirmyes">Yes, ${c.what==="timeout"?"call timeout":c.what==="newgame"?"restart":c.what==="takeover"?"take over":c.what}</button><button class="btn big" data-act="confirmno">No, go back</button></div></div></div>`;
 }
-function render(){
+function render(){ try{ render0(); }catch(e){ showCrash(e&&e.message); } }
+function render0(){
+  if(mode==="host"||mode==="local") keepAwake();
   if(S){ if(ui.lastPhase==="lobby"&&S.phase!=="lobby"&&ui.tab!=="tv") ui.tab="field"; ui.lastPhase=S.phase; }
   const y=window.scrollY; const active=document.activeElement&&document.activeElement.id; const val=active&&document.getElementById(active)?document.getElementById(active).value:null;
   let html="";
@@ -828,17 +1089,18 @@ app.addEventListener("click",e=>{
   if(A==="tab"){ ui.tab=b.dataset.t; window.scrollTo(0,0); render(); return; }
   if(A==="pb"){ ui.pbTeam=b.dataset.t; render(); return; }
   if(A==="pbdef"){ ui.pbDef=b.dataset.d; render(); return; }
+  if(A==="pbsub"){ ui.pbSub=b.dataset.k; render(); return; }
   if(A==="pbclear"){ ui.pbHL=false; render(); return; }
-  if(A==="lookup"){ const l=S&&S.last; if(l&&l.team){ ui.pbTeam=l.team; ui.pbDef=l.dk||"BA"; ui.pbHL=true; } ui.tab="book"; window.scrollTo(0,0); render(); setTimeout(()=>{ const h=document.querySelector(".pd td.hi"); if(h) h.scrollIntoView({block:"center",inline:"center"}); },50); return; }
+  if(A==="lookup"){ const l=S&&S.last; if(l&&l.team){ ui.pbTeam=l.team; ui.pbDef=l.dk||"A"; ui.pbSub="off"; ui.pbHL=true; } ui.tab="book"; window.scrollTo(0,0); render(); setTimeout(()=>{ const h=document.querySelector(".pd td.hi"); if(h) h.scrollIntoView({block:"center",inline:"center"}); },50); return; }
   if(A==="join"){ const n=(document.getElementById("pname")||{}).value||""; if(!n.trim()){ ui.err="Type your name first."; render(); return; } localSet("tb.name",n.trim()); ui.name=null; ui.spectator=false; act({type:"join",name:n.trim(),team:b.dataset.team}); return; }
   if(A==="confirm"){ ui.confirm={what:b.dataset.what,team:b.dataset.team,pid:b.dataset.pid}; render(); return; }
   if(A==="confirmno"){ ui.confirm=null; render(); return; }
   if(A==="confirmyes"){ const c=ui.confirm; ui.confirm=null;
-    if(c.what==="newgame") act({type:"newgame"}); else if(c.what==="pause") act({type:"pause",on:true}); else if(c.what==="undo") act({type:"undo"}); else if(c.what==="kick") act({type:"kick",pid:c.pid}); else if(c.what==="timeout") act({type:"timeout",team:c.team});
+    if(c.what==="newgame") act({type:"newgame"}); else if(c.what==="pause") act({type:"pause",on:true}); else if(c.what==="undo") act({type:"undo"}); else if(c.what==="kick") act({type:"kick",pid:c.pid}); else if(c.what==="timeout") act({type:"timeout",team:c.team}); else if(c.what==="takeover") takeOver();
     render(); return; }
   if(A==="host"){ const code=genCode(); hostPeer(code,false); ui.tab="team"; return; }
   if(A==="resume"){ S=loadHost(); hostPeer(S.code,true); ui.tab="field"; return; }
-  if(A==="local"){ mode="local"; net.via=null; S=(()=>{const h=loadHost(); return h&&h.v===3&&h.code==="LOCAL"?h:null;})()||freshState("LOCAL"); S.admin=myId; saveHost(); ui.tab="team"; render(); return; }
+  if(A==="local"){ mode="local"; net.via=null; S=(()=>{const h=loadHost(); return h&&h.v===4&&h.code==="LOCAL"?h:null;})()||freshState("LOCAL"); S.admin=myId; saveHost(); ui.tab="team"; render(); return; }
   if(A==="joincode"){ const c=((document.getElementById("code")||{}).value||"").trim().toUpperCase(); if(c.length!==4){ ui.err="Enter the 4-letter game code."; render(); return; } ui.spectator=!!b.dataset.tv; ui.tab=ui.spectator?"tv":"team"; const h=loadHost(); if(h&&h.code===c&&h.admin===myId){ S=h; hostPeer(c,true); return; } joinPeer(c); return; }
   if(A==="leavegame"){ try{ if(net.peer) net.peer.destroy(); }catch(_){} net={status:"",peer:null,conns:[],hostConn:null,code:null,db:null,via:null}; mode="none"; S=null; location.hash=""; render(); return; }
   if(A==="copy"){ const u=shareURL(); if(navigator.clipboard) navigator.clipboard.writeText(u).then(()=>{b.textContent="Copied";},()=>{b.textContent="Select the link above";}); return; }
@@ -863,4 +1125,34 @@ app.addEventListener("toggle",e=>{ if(e.target.id==="logd") ui.logOpen=e.target.
   render();
 })();
 window.__tb={handleAction,needs,resolvePending,freshState,get S(){return S;},whoFor,callerOf,rollerOf};
+// ---------- Safety nets: crash screen, keep-awake, backups, leave warning ----------
+function showCrash(msg){
+  if(document.getElementById("crash")) return;
+  const d=document.createElement("div"); d.id="crash"; d.className="cover";
+  d.innerHTML=`<div class="inner modal"><h2>Something hiccuped</h2><p class="muted">The game is saved after every play. Reload to pick up where you left off.</p><p class="small muted" style="word-break:break-word">${esc(String(msg||"").slice(0,160))}</p><div class="row"><button class="btn primary big" id="crashreload">Reload</button><button class="btn big" id="crashkeep">Keep going</button></div></div>`;
+  document.body.appendChild(d);
+  d.querySelector("#crashreload").onclick=()=>{ try{ if(S&&(mode==="host"||mode==="local")) saveHost(); }catch(e){} location.reload(); };
+  d.querySelector("#crashkeep").onclick=()=>d.remove();
+}
+window.addEventListener("error",e=>{ if(e&&e.filename&&/peerjs/.test(e.filename)) return; showCrash(e&&e.message); });
+window.addEventListener("unhandledrejection",e=>{ const m=String(e&&e.reason&&(e.reason.message||e.reason)||""); if(/wake|peer|webrtc|ice|negotiat/i.test(m)) return; });
+// Keep the hosting phone's screen on.
+let wakeLock=null;
+async function keepAwake(){ try{ if((mode==="host"||mode==="local")&&navigator.wakeLock&&!wakeLock){ wakeLock=await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release",()=>{wakeLock=null;}); } }catch(e){ wakeLock=null; } }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ keepAwake(); if(mode==="host"&&net.peer&&net.peer.disconnected){ try{net.peer.reconnect();}catch(e){} } } });
+// Warn before the host closes or leaves the page mid-game.
+window.addEventListener("beforeunload",e=>{ if(mode==="host"&&S&&S.phase!=="lobby"&&S.phase!=="over"){ try{saveHost();}catch(_){} e.preventDefault(); e.returnValue=""; } });
+// Every player's phone keeps a copy, so another phone can take over hosting.
+const BKEY="turkeybowl57.backup";
+function saveBackup(){ try{ if(S) localStorage.setItem(BKEY,JSON.stringify(S)); }catch(e){} }
+function loadBackup(){ try{ const j=localStorage.getItem(BKEY); const b=j?JSON.parse(j):null; return b&&b.v===4?b:null; }catch(e){ return null; } }
+function takeOver(){
+  const b=loadBackup()||S; if(!b) return;
+  const code=genCode(); const s=JSON.parse(JSON.stringify(b)); s.code=code; s.admin=myId; s.paused=false; delete s.prev;
+  try{ if(net.peer) net.peer.destroy(); }catch(e){}
+  net={status:"",peer:null,conns:[],hostConn:null,code:null,db:null,via:null};
+  S=s; addLog(S,null,"A new phone took over hosting. Rejoin with code "+code+"."); saveHost(); hostPeer(code,true); ui.tab="admin"; render();
+}
+// Installable app: cache the game so a Wi-Fi blip can't stop it from loading.
+if("serviceWorker" in navigator && location.protocol==="https:"){ window.addEventListener("load",()=>{ navigator.serviceWorker.register("sw.js").catch(()=>{}); }); }
 })();

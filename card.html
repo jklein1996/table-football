@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1512">
+<title>Turkey Bowl Card</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=Barlow:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{--night:#0b1512;--panel:#13201b;--line:#2a3c35;--chalk:#f2f6ee;--dim:#a3b6ab;--gold:#ffb81c;--kc:#e31837;--phi:#00a3ad;
+  --display:"Saira Condensed","Arial Narrow",sans-serif;--body:"Barlow",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--night);color:var(--chalk);font:15px/1.45 var(--body);padding:16px 16px 40px;max-width:640px;margin-inline:auto}
+h1{font:800 34px/1 var(--display);margin:6px 0 2px;letter-spacing:.02em}h1 b{color:var(--gold)}
+h2{font:800 22px/1.1 var(--display);margin:0 0 8px;letter-spacing:.02em}
+.sub{color:var(--dim);margin:0 0 14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 12px}
+.qrwrap{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+#qr{background:#fff;border-radius:10px;padding:8px;width:180px;height:180px;flex:none}
+#qr svg{width:100%;height:100%;display:block}
+.url{font:600 13px var(--mono);word-break:break-all;color:var(--gold)}
+.btn{display:inline-block;background:var(--gold);color:#1a1300;font-weight:700;padding:10px 14px;border-radius:10px;text-decoration:none;margin-top:8px}
+ol,ul{margin:0;padding-left:20px}li{margin:4px 0}
+table{border-collapse:collapse;width:100%;font:13px var(--mono)}
+th,td{border:1px solid var(--line);padding:5px 4px;text-align:center}
+th{color:var(--dim);font:600 12px var(--body)}
+.die{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:4px;border:1px solid #888}
+.blk{background:#0b0b0b}.wht{background:#f4f1ea}.blu{background:#1d5fd1}.red{background:#c8102e}.grn{background:#1f8a3b}
+.fix td{text-align:left;font:14px var(--body)}.fix td:first-child{color:var(--gold);font-weight:700;width:38%}
+.muted{color:var(--dim)}
+</style>
+</head>
+<body>
+<h1>TURKEY BOWL <b>LVII</b></h1>
+<p class="sub">Quick card for game night. Chiefs vs Eagles, Paydirt rules.</p>
+
+<div class="card"><h2>Scan to play</h2>
+ <div class="qrwrap"><div id="qr" aria-label="QR code for the game"></div>
+ <div><div class="url" id="url"></div><a class="btn" id="open" href="./">Open the game</a>
+ <p class="muted" style="margin:8px 0 0;font-size:13px">Once a game is running, your <b>Admin tab</b> shows a QR with the game code built in. Show that one so nobody has to type the code.</p></div></div></div>
+
+<div class="card"><h2>Kickoff checklist (Joe)</h2><ol>
+ <li>Open the game and tap <b>Start a new game</b>. Write the 4-letter code on a sticky note.</li>
+ <li>Join a team yourself on the Teams tab. Pick quarters and minutes.</li>
+ <li>Show the Admin-tab QR. Everyone joins <b>Chiefs</b> or <b>Eagles</b>.</li>
+ <li>Laptop or TV: open the link, type the code, tap <b>Join as TV</b>.</li>
+ <li>Tap <b>Start the game</b>, then <b>Flip the coin</b>.</li>
+ <li>Keep your phone plugged in with the game open. The screen stays on by itself.</li></ol></div>
+
+<div class="card"><h2>If something goes wrong</h2><table class="fix"><tbody>
+ <tr><td>Your phone reloaded or closed</td><td>Open the game again and tap <b>Resume game</b>. Every play is saved.</td></tr>
+ <tr><td>Someone can't connect</td><td>Turn their Wi-Fi off and use cell data, then rejoin with the code.</td></tr>
+ <tr><td>Nobody can connect</td><td>On your phone tap <b>Play on this device</b> and pass it around.</td></tr>
+ <tr><td>Your phone dies</td><td>Any player's phone shows <b>Take over hosting</b> after 20 seconds. It continues from the last play with a new code.</td></tr>
+ <tr><td>Wrong tap or bad roll</td><td>Admin tab → <b>Undo last play</b>.</td></tr>
+ <tr><td>Screen says "Something hiccuped"</td><td>Tap <b>Reload</b>. The game comes back where it was.</td></tr></tbody></table></div>
+
+<div class="card"><h2>Real dice (optional)</h2><p class="muted" style="margin:0 0 8px">Five dice in five colors. Each face reads as the number below. The app can roll for you instead.</p>
+<table><thead><tr><th>Die</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr></thead><tbody>
+ <tr><th><span class="die blk"></span>Black</th><td>10</td><td>20</td><td>20</td><td>30</td><td>30</td><td>30</td></tr>
+ <tr><th><span class="die wht"></span>White</th><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td></tr>
+ <tr><th><span class="die blu"></span>Blue</th><td>0</td><td>0</td><td>1</td><td>2</td><td>3</td><td>4</td></tr>
+ <tr><th><span class="die red"></span>Red</th><td>1</td><td>1</td><td>1</td><td>2</td><td>2</td><td>3</td></tr>
+ <tr><th><span class="die grn"></span>Green</th><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>2</td></tr></tbody></table>
+<p style="margin:8px 0 0">Offense = black + white + blue (10–39). Defense = red + green (1–5).</p></div>
+
+<div class="card"><h2>Who wins the box</h2><ul>
+ <li>Two plain numbers: <b>add them</b>.</li>
+ <li>A number in <b>( )</b> beats a plain number. Two ( ) numbers: add.</li>
+ <li>Offense <b>B, QT, INT, F</b> or a flag beats the defense box.</li>
+ <li>Defense <b>QT</b> beats a plain offense number or INC.</li>
+ <li><b>QT</b> → roll the QT column. <b>B</b> → roll the Breakaway column. <b>INT</b> → defense rolls its return. <b>F</b> → fumbling team rolls: 10–28 keeps it.</li></ul></div>
+
+<div class="card"><h2>Clock</h2><ul>
+ <li>Time runs in 10-second boxes: each snap 10s; if the clock is running the huddle adds Normal 30s, Hurry-up 10s, Run the clock 40s. Quarters are 15 minutes.</li>
+ <li>Stops on: incomplete, out of bounds (*), flag, turnover, score, kick, timeout, spike.</li>
+ <li>Two-minute warning in the 2nd and 4th quarters. 3 timeouts per half.</li>
+ <li>Tied at the end: overtime, next score wins.</li></ul></div>
+
+<script src="js/qrcode.js"></script>
+<script>
+(function(){
+  var base=location.href.split("#")[0].replace(/card\.html.*$/,"");
+  var code=(location.hash||"").replace("#","").toUpperCase();
+  var url=/^[A-Z]{4}$/.test(code)?base+"#"+code:base;
+  document.getElementById("url").textContent=url;
+  document.getElementById("open").href=url;
+  try{ var q=qrcode(0,"M"); q.addData(url); q.make(); document.getElementById("qr").innerHTML=q.createSvgTag({cellSize:4,margin:2,scalable:true}); }catch(e){}
+})();
+</script>
+</body>
+</html>
