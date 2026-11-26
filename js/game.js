@@ -544,7 +544,7 @@ function snapshotPrev(s){ const c=JSON.parse(JSON.stringify(s)); delete c.prev; 
 function handleAction(s,a,pid){
   if(!a||typeof a!=="object") return false;
   const isAdmin=pid===s.admin;
-  const adminOnly=["kick","move","up","settings","start","toss","newgame","undo","skip","pause"];
+  const adminOnly=["admin","kick","move","up","settings","start","toss","newgame","undo","skip","pause"];
   if(s.paused && !(isAdmin&&adminOnly.includes(a.type)) && a.type!=="join" && a.type!=="leave") return false;
   switch(a.type){
     case "join":{
@@ -554,6 +554,7 @@ function handleAction(s,a,pid){
       else s.players.push({id:pid,name,team});
       return true; }
     case "leave": s.players=s.players.filter(p=>p.id!==pid); return true;
+    case "admin": if(!isAdmin) return false; { const p=s.players.find(x=>x.id===a.pid); if(!p) return false; s.admin=p.id; addLog(s,null,`${p.name} is now the admin.`); return true; }
     case "kick": if(!isAdmin) return false; s.players=s.players.filter(p=>p.id!==a.pid); return true;
     case "move": if(!isAdmin) return false; { const p=s.players.find(x=>x.id===a.pid); if(!p) return false; s.players=s.players.filter(x=>x.id!==a.pid); p.team=other(p.team); s.players.push(p); return true; }
     case "up": if(!isAdmin) return false; { const i=s.players.findIndex(x=>x.id===a.pid); if(i<0) return false; const t=s.players[i].team; let j=i-1; while(j>=0&&s.players[j].team!==t) j--; if(j<0) return false; const tmp=s.players[j]; s.players[j]=s.players[i]; s.players[i]=tmp; return true; }
@@ -931,7 +932,7 @@ function rosterCol(team){
   const L=teamList(S,team); const s=S;
   const c=callerOf(s,team), r=rollerOf(s,team);
   return `<div class="panel ${TEAMS[team].cls}"><h2>${TEAMS[team].name} <span class="muted small">${L.length} player${L.length===1?"":"s"}</span></h2>
-   <ol class="roster">${L.map((p,i)=>`<li><span>${esc(p.name)}${p.id===myId?' <span class="tag">you</span>':""}${p.id===s.admin?' <span class="tag">admin</span>':""}</span><span class="roles">${s.phase!=="lobby"&&c&&c.id===p.id?'<span class="pill">calls next</span>':""}${s.phase!=="lobby"&&r&&r.id===p.id?'<span class="pill r">rolls next</span>':""}</span>${isAdmin()?`<span class="adm"><button class="mini" data-act="send" data-a='${esc(JSON.stringify({type:"up",pid:p.id}))}' title="Move up" aria-label="Move ${esc(p.name)} up">↑</button><button class="mini" data-act="send" data-a='${esc(JSON.stringify({type:"move",pid:p.id}))}' title="Switch team" aria-label="Switch ${esc(p.name)} to other team">⇄</button><button class="mini" data-act="confirm" data-what="kick" data-pid="${esc(p.id)}" title="Remove" aria-label="Remove ${esc(p.name)}">✕</button></span>`:""}</li>`).join("")||'<li class="muted">No one yet</li>'}</ol>
+   <ol class="roster">${L.map((p,i)=>`<li><span>${esc(p.name)}${p.id===myId?' <span class="tag">you</span>':""}${p.id===s.admin?' <span class="tag">admin</span>':""}</span><span class="roles">${s.phase!=="lobby"&&c&&c.id===p.id?'<span class="pill">calls next</span>':""}${s.phase!=="lobby"&&r&&r.id===p.id?'<span class="pill r">rolls next</span>':""}</span>${isAdmin()?`<span class="adm"><button class="mini" data-act="send" data-a='${esc(JSON.stringify({type:"up",pid:p.id}))}' title="Move up" aria-label="Move ${esc(p.name)} up">↑</button><button class="mini" data-act="send" data-a='${esc(JSON.stringify({type:"move",pid:p.id}))}' title="Switch team" aria-label="Switch ${esc(p.name)} to other team">⇄</button>${p.id!==s.admin?`<button class="mini" data-act="send" data-a='${esc(JSON.stringify({type:"admin",pid:p.id}))}' title="Make admin" aria-label="Make ${esc(p.name)} the admin">👑</button>`:""}<button class="mini" data-act="confirm" data-what="kick" data-pid="${esc(p.id)}" title="Remove" aria-label="Remove ${esc(p.name)}">✕</button></span>`:""}</li>`).join("")||'<li class="muted">No one yet</li>'}</ol>
    ${s.phase!=="lobby"&&isAdmin()&&L.length>1?`<div class="row"><button class="btn small" data-act="send" data-a='${esc(JSON.stringify({type:"skip",team,which:"call"}))}'>Skip caller</button><button class="btn small" data-act="send" data-a='${esc(JSON.stringify({type:"skip",team,which:"roll"}))}'>Skip roller</button></div>`:""}</div>`;
 }
 function joinBox(){
@@ -942,7 +943,7 @@ function joinBox(){
     <div class="small muted">Turns rotate in the order players joined. The admin can reorder.</div></div>`;
 }
 function lobbyPanel(){
-  return `${isAdmin()&&mode!=="local"?`<div class="panel"><h2>Invite players</h2><div class="small muted">Show this screen around. Everyone scans the QR, taps Join as a player, and picks a team. They wait here until you start.</div>${shareBox()}</div>`:""}${joinBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>${isAdmin()?settingsBox()+`<button class="btn primary big" data-act="send" data-a='{"type":"start"}'>Start the game</button>`:`<div class="wait">Waiting for the admin to start.</div>`}`;
+  return `${(isAdmin()||mode==="host")&&mode!=="local"?`<div class="panel"><h2>Invite players</h2><div class="small muted">Show this screen around. Everyone scans the QR, taps Join as a player, and picks a team. They wait here until you start.</div>${shareBox()}${mode==="host"?`<div class="note small"><b>Hosting on a computer?</b> Leave this tab open; it runs the game for everyone. Join on your phone, then tap 👑 next to your name here to make your phone the admin.${!isAdmin()?" Admin has been handed to a phone.":""}</div>`:""}</div>`:""}${joinBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>${isAdmin()?settingsBox()+`<button class="btn primary big" data-act="send" data-a='{"type":"start"}'>Start the game</button>`:`<div class="wait">Waiting for the admin to start.</div>`}`;
 }
 function settingsBox(){
   const s=S; const locked=!(s.phase==="lobby"||s.phase==="toss");
