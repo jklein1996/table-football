@@ -1,5 +1,5 @@
 // Network first, so tonight's updates always load; falls back to the last saved copy if the Wi-Fi drops.
-const CACHE="turkeybowl-v7";
+const CACHE="turkeybowl-v9";
 const CORE=["./","index.html","card.html","js/game.js","js/peerjs.min.js","js/qrcode.js","manifest.webmanifest","icons/icon-192.png"];
 self.addEventListener("install",e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).catch(()=>{})); self.skipWaiting(); });
 self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())); });

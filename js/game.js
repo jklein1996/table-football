@@ -606,6 +606,12 @@ function teamList(s,team){ return s.players.filter(p=>p.team===team); }
 function pickRot(s,team,key){ const L=teamList(s,team); if(!L.length) return null; return L[((s[key][team]||0)%L.length+L.length)%L.length]; }
 function callerOf(s,team){ return pickRot(s,team,"ci"); }
 function rollerOf(s,team){ const L=teamList(s,team); if(!L.length) return null; return L[(((s.ci[team]||0)+(L.length>1?1:0)+(s.ro[team]||0))%L.length+L.length)%L.length]; }
+// Your own dice: three dice, set by color in the lobby. Die 1 is the tens die, dice 2 and 3 the ones dice.
+// The defense rolls two of the same dice and reads them with the red and green tables.
+const DCOLS={black:["Black","#0b0b0b","#fff"],white:["White","#f4f1ea","#111"],red:["Red","#c8102e","#fff"],blue:["Blue","#1d5fd1","#fff"],green:["Green","#1f8a3b","#fff"],
+  yellow:["Yellow","#f2c200","#111"],orange:["Orange","#f26a1b","#fff"],purple:["Purple","#6b3fb5","#fff"],pink:["Pink","#ff6fae","#111"],gray:["Gray","#8a8f8c","#111"],clear:["Clear","#dfe8ee","#111"]};
+const DICE0={c:["black","white","blue"],d:[1,2]};
+const diceCfg=s=>(s&&s.dice)||DICE0;
 const ST=k=>k==="PUNT"||k==="FG"||k==="SPIKE"||k==="KNEEL";
 const NOROLL=k=>k==="SPIKE"||k==="KNEEL";
 // What is the game waiting on? [{team, kind:'call'|'roll'|'pat'|'toss'|'start', side:'off'|'def'}]
@@ -641,7 +647,7 @@ function snapshotPrev(s){ const c=JSON.parse(JSON.stringify(s)); delete c.prev; 
 function handleAction(s,a,pid){
   if(!a||typeof a!=="object") return false;
   const isAdmin=pid===s.admin;
-  const adminOnly=["admin","kick","move","up","settings","start","toss","newgame","undo","skip","pause"];
+  const adminOnly=["dice","admin","kick","move","up","settings","start","toss","newgame","undo","skip","pause"];
   if(s.paused && !(isAdmin&&adminOnly.includes(a.type)) && a.type!=="join" && a.type!=="leave") return false;
   switch(a.type){
     case "join":{
@@ -657,6 +663,8 @@ function handleAction(s,a,pid){
     case "move": if(!isAdmin) return false; { const p=s.players.find(x=>x.id===a.pid); if(!p) return false; s.players=s.players.filter(x=>x.id!==a.pid); p.team=other(p.team); s.players.push(p); return true; }
     case "up": if(!isAdmin) return false; { const i=s.players.findIndex(x=>x.id===a.pid); if(i<0) return false; const t=s.players[i].team; let j=i-1; while(j>=0&&s.players[j].team!==t) j--; if(j<0) return false; const tmp=s.players[j]; s.players[j]=s.players[i]; s.players[i]=tmp; return true; }
     case "settings": if(!isAdmin) return false; { const m=+a.qmin, n=+a.nq; if(QMINS.includes(m)){ s.qmin=m; if(s.phase==="lobby"||s.phase==="toss") s.clock=m*60; } if(NQS.includes(n)&&(s.phase==="lobby"||s.phase==="toss"||n>=s.q)) s.nq=n; return true; }
+    case "dice": if(!isAdmin) return false; { const c=Array.isArray(a.c)?a.c.slice(0,3):[]; const d=Array.isArray(a.d)?a.d.map(Number):[];
+      if(c.length!==3||!c.every(x=>DCOLS[x])||d.length!==2||d[0]===d[1]||!d.every(i=>i>=0&&i<=2)) return false; s.dice={c,d}; return true; }
     case "pause": if(!isAdmin) return false; s.paused=!!a.on; addLog(s,null,s.paused?"Game paused by the admin.":"Game resumed."); return true;
     case "timeout":{ const t=a.team==="PHI"?"PHI":a.team==="KC"?"KC":null; if(!t) return false; const me=s.players.find(p=>p.id===pid); if(!(isAdmin||(me&&me.team===t))) return false;
       if(s.phase!=="play"||s.follow||s.pend.od||s.pend.dd||!(s.to[t]>0)) return false; s.to[t]--; s.running=false; addLog(s,t,`Timeout ${TEAMS[t].name} (${s.to[t]} left). Clock stopped at ${fmtClock(s.clock)}.`); s.last={txt:`Timeout, ${TEAMS[t].name}. Clock stopped at ${fmtClock(s.clock)}.`,cls:"",team:t}; return true; }
@@ -915,10 +923,14 @@ function field(big){
     <div class="ez l"><span>CHIEFS</span></div><div class="ez r"><span>EAGLES</span></div>${lines}${marks}</div></div>`;
 }
 // Dice as the five colored Paydirt dice (value shown is what the die reads as).
+const dstyle=k=>{ const c=DCOLS[k]||DCOLS.white; return `background:${c[1]};color:${c[2]};border-color:${c[2]==="#fff"?"#ffffff55":"#00000055"}`; };
+const dname=i=>DCOLS[diceCfg(S).c[i]][0];
+function dieEl(i,v,title){ return `<div class="die roll" style="${dstyle(diceCfg(S).c[i])}" title="${esc(title)}">${v}</div>`; }
 function diceHTML(d,showDef){
   if(!d||!d.t) return "";
-  const o=`<div class="die blk roll" title="Black die (tens)">${BLACK[d.t-1]*10}</div><div class="die wht roll" title="White die">${WHITE[d.a-1]}</div><div class="die blu roll" title="Blue die">${BLUE[d.b-1]}</div>`;
-  const df=showDef&&d.d1?`<span class="tag" style="margin-left:4px">DEF</span><div class="die red roll" title="Red die">${RED[d.d1-1]}</div><div class="die grn roll" title="Green die">${GREEN[d.d2-1]}</div>`:"";
+  const D=diceCfg(S);
+  const o=dieEl(0,BLACK[d.t-1]*10,dname(0)+" die (tens)")+dieEl(1,WHITE[d.a-1],dname(1)+" die")+dieEl(2,BLUE[d.b-1],dname(2)+" die");
+  const df=showDef&&d.d1?`<span class="tag" style="margin-left:4px">DEF</span>${dieEl(D.d[0],RED[d.d1-1],dname(D.d[0])+" die (defense, first)")}${dieEl(D.d[1],GREEN[d.d2-1],dname(D.d[1])+" die (defense, second)")}`:"";
   return `<div class="dice">${o}${df}</div>`;
 }
 // Color of a chart box. Black = gain, red = bad for the offense, yellow = flag, gold = breakaway/TD, dashed = incomplete.
@@ -1060,6 +1072,7 @@ function actionCard(n,asAdmin){
       <button class="play ${sel==="FG"?"sel":""}" data-act="pick" data-key="${key}" data-play="FG" ${dist<=64?"":"disabled"}><b>Field Goal</b><span class="s">${dist<=64?`${dist} yds · ${fgChance(dist,n.team)}% good · ${pct(OFFP[10])} blocked`:"Too far"}</span></button>
       <button class="play ${sel==="SPIKE"?"sel":""}" data-act="pick" data-key="${key}" data-play="SPIKE"><b>Spike</b><span class="s">Stop the clock, lose a down</span></button>
       <button class="play ${sel==="KNEEL"?"sel":""}" data-act="pick" data-key="${key}" data-play="KNEEL"><b>Kneel</b><span class="s">Lose 1, keep clock running</span></button>`:""}</div>
+      ${sel&&PLAYS[sel]?`<div class="tag">${esc(PLAYS[sel].name)}: every roll and what it gives you</div>${rollGrid(gcell(CHART[n.team][sel]),null)}<div class="small"><b>${esc(playLine(n.team,sel))}</b></div>`:""}
       ${sel==="PUNT"?`<div class="tag">Punt type</div><div class="seg">${[["","Normal punt","they roll a return"],["1","Coffin corner",`${COFFIN} yds shorter, no return`]].map(([k,nm2,sub])=>`<button class="${(ui.coffin?"1":"")===k?"on":""}" data-act="coffin" data-k="${k}">${nm2}<small>${sub}</small></button>`).join("")}</div>`:""}`;
     } else {
       sheet=`<div class="plays">${DEF_ORDER.map(k=>{const r=DEFRATE[n.team][k];return `<button class="play def ${sel===k?"sel":""}" data-act="pick" data-key="${key}" data-play="${k}"><b>${DEFS[k].name}</b><span class="s">${DEFS[k].desc}</span><span class="s st">${defLine(s.poss,k)}</span>${r>0?'<span class="stars">★ team strength: +1 on your defense roll</span>':""}</button>`;}).join("")}</div>`;
@@ -1071,12 +1084,12 @@ function actionCard(n,asAdmin){
   if(n.kind==="roll"){
     const fol=n.side==="fol"; const off=n.side!=="def"; const isKO=s.phase==="kickoff"; const md=ui.md; const keys=off?["t","a","b"]:["d1","d2"];
     const ready=keys.every(k=>md[k]);
-    const face=(k,label,cls,map,mul)=>`<label><span><span class="die ${cls} sm"></span> ${label}</span><span class="faces">${[1,2,3,4,5,6].map(v=>`<button data-act="face" data-k="${k}" data-v="${v}" class="${md[k]===v?"on":""}" aria-label="${label} face ${v}">${v}<small>=${map[v-1]*(mul||1)}</small></button>`).join("")}</span></label>`;
+    const DC=diceCfg(s); const face=(k,label,ci,map,mul)=>`<label><span><span class="die sm" style="${dstyle(DC.c[ci])}"></span> ${label}</span><span class="faces">${[1,2,3,4,5,6].map(v=>`<button data-act="face" data-k="${k}" data-v="${v}" class="${md[k]===v?"on":""}" aria-label="${label} face ${v}">${v}<small>=${map[v-1]*(mul||1)}</small></button>`).join("")}</span></label>`;
     const what=fol?FOLNAME[n.fol].toLowerCase()+" roll":s.phase==="kickoff"?"kickoff":S.pend.oc==="PUNT"?"punt":S.pend.oc==="FG"?"field goal":S.pend.pat==="XP"?"extra point":off?"offense":"defense";
     const folNote=fol?`<div class="small">${n.fol==="KR"?"The kick is coming down. Roll your Kickoff Return column to see where you start.":n.fol==="PR"?"The punt is coming down. Roll your Punt Return column: fair catch, a return, or a muff.":n.fol==="QT"?"The pass rush got there. Roll to see what the quarterback does (QT column).":n.fol==="B"?"He's loose! Roll to see how far he goes (Breakaway column).":n.fol==="FUM"?"Ball's on the ground! Roll the fumble line: 10–28 you keep it.":n.fol==="BK"?"Blocked! Roll the Blocked Kick column to see if you scoop it up and run.":"Picked off! Roll your Interception Return column."}</div>`:"";
-    const manual=ui.manual?`<div class="manual">${off?face("t","Black die","blk",BLACK,10)+face("a","White die","wht",WHITE)+face("b","Blue die","blu",BLUE):face("d1","Red die","red",RED)+face("d2","Green die","grn",GREEN)}</div>
+    const manual=ui.manual?`<div class="manual">${off?face("t",dname(0)+" die (tens)",0,BLACK,10)+face("a",dname(1)+" die",1,WHITE)+face("b",dname(2)+" die",2,BLUE):face("d1",dname(DC.d[0])+" die",DC.d[0],RED)+face("d2",dname(DC.d[1])+" die",DC.d[1],GREEN)}</div>
       <button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side,onside:isKO&&!!ui.onside,dice:Object.fromEntries(keys.map(k=>[k,md[k]||0]))}))}' ${ready?"":"disabled"}>Submit my dice</button>`:
-      `<button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side,onside:isKO&&!!ui.onside}))}'>🎲 ${isKO&&ui.onside?"Onside kick: roll":"Roll"} ${off?"black, white & blue":"red & green"}</button>`;
+      `<button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side,onside:isKO&&!!ui.onside}))}'>🎲 ${isKO&&ui.onside?"Onside kick: roll":"Roll"} ${off?`all 3 dice`:`the ${dname(diceCfg(s).d[0]).toLowerCase()} & ${dname(diceCfg(s).d[1]).toLowerCase()} dice`}</button>`;
     return `<div class="panel ${T.cls} turn">${tag}<h2>Your roll: ${T.name} ${what}</h2>${folNote}${isKO?`<label class="row small"><input type="checkbox" id="onside" ${ui.onside?"checked":""}> Onside kick (you recover on 36–39, about 1 in 7; otherwise they get it at your 45)</label>`:""}<label class="row small muted"><input type="checkbox" id="manualdice" ${ui.manual?"checked":""}> I'm rolling real dice</label>${manual}</div>`;
   }
   return "";
@@ -1098,7 +1111,15 @@ function joinBox(){
     <div class="small muted">Turns rotate in the order players joined. The admin can reorder.</div></div>`;
 }
 function lobbyPanel(){
-  return `${(isAdmin()||mode==="host")&&mode!=="local"?`<div class="panel"><h2>Invite players</h2><div class="small muted">Show this screen around. Everyone scans the QR, taps Join as a player, and picks a team. They wait here until you start.</div>${shareBox()}${mode==="host"?`<div class="note small"><b>Hosting on a computer?</b> Leave this tab open; it runs the game for everyone. Join on your phone, then tap 👑 next to your name here to make your phone the admin.${!isAdmin()?" Admin has been handed to a phone.":""}</div>`:""}</div>`:""}${joinBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>${isAdmin()?settingsBox()+`<button class="btn primary big" data-act="send" data-a='{"type":"start"}'>Start the game</button>`:`<div class="wait">Waiting for the admin to start.</div>`}`;
+  return `${(isAdmin()||mode==="host")&&mode!=="local"?`<div class="panel"><h2>Invite players</h2><div class="small muted">Show this screen around. Everyone scans the QR, taps Join as a player, and picks a team. They wait here until you start.</div>${shareBox()}${mode==="host"?`<div class="note small"><b>Hosting on a computer?</b> Leave this tab open; it runs the game for everyone. Join on your phone, then tap 👑 next to your name here to make your phone the admin.${!isAdmin()?" Admin has been handed to a phone.":""}</div>`:""}</div>`:""}${joinBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>${isAdmin()?settingsBox()+diceBox()+`<button class="btn primary big" data-act="send" data-a='{"type":"start"}'>Start the game</button>`:`<div class="wait">Waiting for the admin to start.</div>`}`;
+}
+function diceBox(){
+  const D=diceCfg(S); const pairs=[[1,2],[0,1],[0,2]];
+  const sel=(i)=>`<select class="btn" data-dice="${i}" aria-label="Color of die ${i+1}">${Object.keys(DCOLS).map(k=>`<option value="${k}" ${D.c[i]===k?"selected":""}>${DCOLS[k][0]}</option>`).join("")}</select>`;
+  return `<div class="panel"><h2>Your dice</h2><div class="small muted">Pick the colors of the 3 dice at the table. Both teams roll the same dice.</div>
+   <div class="dicecfg">${[0,1,2].map(i=>`<label><span class="die sm" style="${dstyle(D.c[i])}"></span> Die ${i+1} <small>${i===0?"tens: 1=10, 2–3=20, 4–6=30":i===1?"ones: face − 1 (0–5)":"ones: 1–2=0, then face − 2 (0–4)"}</small>${sel(i)}</label>`).join("")}</div>
+   <label class="small muted" for="dicedef">Defense rolls these two</label><select id="dicedef" class="btn">${pairs.map(([a,b])=>`<option value="${a}${b}" ${D.d[0]===a&&D.d[1]===b?"selected":""}>${DCOLS[D.c[a]][0]} (die ${a+1}) + ${DCOLS[D.c[b]][0]} (die ${b+1})</option>`).join("")}</select>
+   <div class="small muted">Defense: first die 1–3 = 1, 4–5 = 2, 6 = 3; second die 1–4 = 0, 5 = 1, 6 = 2. Add them (1–5). Prefer the app to roll? Just tap Roll.</div></div>`;
 }
 function settingsBox(){
   const s=S; const locked=!(s.phase==="lobby"||s.phase==="toss");
@@ -1118,16 +1139,17 @@ function colOdds(team,pk){
   const pass=PLAYS[pk].cat==="pass";
   return `${pass?`${pct(comp)} catch`:`avg ${(yd/comp).toFixed(1)}`}<br>${pass?`avg ${(yd/comp).toFixed(1)}`:`${pct(to)} fum`}${pass?`<br>${pct(inc)} inc<br>${pct(qt)} QT<br>${pct(to)} INT`:""}<br>${pct(b)} B`;
 }
-function offChart(team,hl){
-  const cols=ALL_OFF.concat(["QT","B"]);
+function offChart(team,hl,only){
+  const cols=only||ALL_OFF.concat(["QT","B"]);
   const name=k=>PLAYS[k]?`${PLAYS[k].n} · ${PLAYS[k].name}${RATE[team][k]>0?" ★":""}`:k==="QT"?"QT · QB trapped":"B · Breakaway";
   return `<div class="pd"><table><thead><tr><th class="rk">Roll</th><th class="pr">Odds</th>${cols.map(k=>`<th class="${hl&&(hl.pk===k||hl.fol===k)?"hc":""} ${PLAYS[k]?"":"xc"}">${name(k)}</th>`).join("")}</tr></thead><tbody>
   ${ROLLS.map(R=>`<tr class="${R%10===0?"dec":""}${hl&&(hl.R===R||hl.FR===R)?" hr":""}"><th class="rk">${R}</th><td class="pr">${OFFP[R]}</td>${cols.map(k=>boxTD(CHART[team][k][R],hl&&((hl.R===R&&hl.pk===k)||(hl.FR===R&&hl.fol===k)))).join("")}</tr>`).join("")}
-  <tr class="odds"><th class="rk">Odds</th><td class="pr">of 216</td>${ALL_OFF.map(k=>`<td>${colOdds(team,k)}</td>`).join("")}<td></td><td></td></tr>
+  <tr class="odds"><th class="rk">Odds</th><td class="pr">of 216</td>${cols.map(k=>`<td>${PLAYS[k]?colOdds(team,k):esc(colSummary(CHART[team][k],"avg")).split(" · ").join("<br>")}</td>`).join("")}</tr>
   </tbody></table></div>`;
 }
-function stChart(team,hl){
-  const cols=[["KO","Kickoff (kicker rolls)"],["KR","Kick return (receiver rolls)"],["PU","Punt (kicker rolls)"],["PR","Punt return (receiver rolls)"],["FG","Field goal (good up to)"],["XP","Extra point"],["IR","Interception return"],["FM","Fumble recovery"],["BK","Blocked kick (blockers roll)"]];
+function stChart(team,hl,only){
+  let cols=[["KO","Kickoff (kicker rolls)"],["KR","Kick return (receiver rolls)"],["PU","Punt (kicker rolls)"],["PR","Punt return (receiver rolls)"],["FG","Field goal (good up to)"],["XP","Extra point"],["IR","Interception return"],["FM","Fumble recovery"],["BK","Blocked kick (blockers roll)"]];
+  if(only) cols=cols.filter(c=>only.includes(c[0]));
   const cellOf=(k,R)=>k==="FM"?FMBOX(R):CHART[team][k][R];
   const isH=(k,R)=>hl&&((hl.col===k&&hl.R===R)||(hl.fcol===k&&hl.FR===R));
   return `<div class="pd"><table><thead><tr><th class="rk">Roll</th><th class="pr">Odds</th>${cols.map(([k,n])=>`<th class="${hl&&(hl.col===k||hl.fcol===k)?"hc":""}">${n}</th>`).join("")}</tr></thead><tbody>
@@ -1159,15 +1181,62 @@ function playbookView(){
   return `${locked?`<div class="panel slim ${TEAMS[myT].cls}"><div class="small"><b>${TEAMS[myT].name} ${side==="off"?"on offense":"on defense"}.</b> ${side==="off"?"You see your offense chart. Your defense chart shows up when the other team has the ball.":"You see your defense chart. Your offense chart shows up when you get the ball back."}</div></div>`:`<div class="seg wide">${["KC","PHI"].map(t=>`<button class="${team===t?"on":""}" data-act="pb" data-t="${t}">${TEAMS[t].name} on offense</button>`).join("")}</div>`}
    ${okL||stL?`<div class="panel slim">${lookupLine(l).replace(/<button[^>]*>.*?<\/button>/,`<button class="btn ghost sm" data-act="pbclear">Clear highlight</button>`)}</div>`:""}
    <div class="seg">${allowed.map(k=>`<button class="${sub===k?"on":""}" data-act="pbsub" data-k="${k}">${SUBN[k]}</button>`).join("")}</div>
-   ${sub==="off"?`<div class="panel ${TEAMS[team].cls}"><h2>${TEAMS[team].name} offense chart</h2>
-    <div class="small">Find the offense roll (10–39) down the left and the play across the top. "Odds" is how many of the 216 dice combinations make that roll.</div>
-    ${offChart(team,hlO)}${legend()}</div>`:""}
-   ${sub==="def"?`<div class="panel"><h2>${TEAMS[def].name} defense chart</h2>
+   ${sub==="off"?(ui.pbOne?offByPlay(team,hlO):offSheet(team,hlO,hlS)):""}
+   ${sub==="def"&&ui.pbOne?defByDef(team,dk,hlD):""}
+   ${sub==="def"&&!ui.pbOne?`<div class="panel"><h2>${TEAMS[def].name} defense chart</h2>
     <div class="seg">${DEF_ORDER.map(d=>`<button class="${dk===d?"on":""}" data-act="pbdef" data-d="${d}">${DEFS[d].name}</button>`).join("")}</div>
     <div class="small">${esc(DEFS[dk].desc)}. Find the play down the left and the defense roll (red + green, 1–5) across the top.${DEFRATE[def][dk]?` ${TEAMS[def].name} ★ ${DEFS[dk].short}: add 1 to the defense roll (max 5).`:""}</div>
-    ${defChart(dk,hlD,team)}${legend()}</div>`:""}
+    ${zoomBar()}<div class="zoomwrap" style="zoom:${ui.pbZoom||1}">${defChart(dk,hlD,team)}</div>
+    <div class="tag">What ${TEAMS[team].name} get against ${esc(DEFS[dk].name)}</div>
+    <div class="tbl"><table class="vs">${VSHEAD("Play")}<tbody>${ALL_OFF.map(pk=>vsRow(matchup(team,pk,dk),esc(PLAYS[pk].name),10)).join("")}</tbody></table></div>
+    ${legend()}<button class="btn small" data-act="pbone" data-k="1">Show one formation at a time</button></div>`:""}
    ${sub==="st"?`<div class="panel ${TEAMS[stT].cls}"><h2>${TEAMS[stT].name} kicks & returns</h2><div class="small">Roll the offense dice (black + white + blue). The box is the final result; don't use the defense chart.</div>${stChart(stT,hlS)}</div>`:""}
    ${sub==="how"?howToRead():""}`;
+}
+// The classic Paydirt sheet, split into tabs so each fits a phone: Running, Passing, QB trapped & Breakaway, Special teams.
+const PBCAT={run:["Running",["LP","OT","ER","DR","QS"]],pass:["Passing",["SC","SP","MP","LG","SL","HM"]],qt:["QB trapped & Breakaway",["QT","B"]],st:["Special teams",null]};
+function zoomBar(){ if(!ui.pbZoom) ui.pbZoom=innerWidth<500?0.85:1; const z=ui.pbZoom; return `<div class="zoombar"><span class="small muted">Zoom</span><button class="btn small" data-act="pbzoom" data-k="-1" aria-label="Zoom out">−</button><span class="small">${Math.round(z*100)}%</span><button class="btn small" data-act="pbzoom" data-k="1" aria-label="Zoom in">+</button><span class="small muted">Scroll the sheet sideways and down. Pinch works too.</span></div>`; }
+function offSheet(team,hl,hlS){
+  const cat=PBCAT[ui.pbCat]?ui.pbCat:(hl&&hl.pk&&PBCAT.pass[1].includes(hl.pk)?"pass":hlS?"st":"run");
+  const body=cat==="st"?stChart(team,hlS):offChart(team,hl,PBCAT[cat][1]);
+  const note=cat==="run"?"Runs and the QB sneak. Find your roll (10–39) down the left, your play across the top.":cat==="pass"?"Passes and the Hail Mary. Long black runs are incompletes, like the real sheet.":cat==="qt"?"Rolled only after a QT or B box: QT when the pass rush gets there (sack, throw-away, scramble, strip-sack), B when the runner breaks free.":"Kicks and returns. The kicking team rolls Kickoff or Punt, the receiving team rolls the Return column; the box is final, no defense chart.";
+  return `<div class="panel ${TEAMS[team].cls}"><h2>${TEAMS[team].name} offense sheet</h2>
+   <div class="seg wrap4">${Object.keys(PBCAT).map(k=>`<button class="${cat===k?"on":""}" data-act="pbcat" data-k="${k}">${PBCAT[k][0]}</button>`).join("")}</div>
+   <div class="small">${note} Odds = how many of the 216 dice combinations make that roll; the bottom row sums up each column.</div>
+   ${zoomBar()}<div class="zoomwrap" style="zoom:${ui.pbZoom||1}">${body}</div>${legend()}
+   <button class="btn small" data-act="pbone" data-k="1">Show one play at a time, with odds vs each defense</button></div>`;
+}
+// Phone view of the playbook: one play at a time, every roll with its number and odds,
+// then how that play does against each defense.
+const PBCOLS=()=>ALL_OFF.concat(["QT","B"]);
+function vsRow(m,lab,need){ let g=0,gy=0,fd=0; for(const k in m.ys){ const y=+k,w=m.ys[k]; if(y>0){g+=w;gy+=w*y;} if(y>=need) fd+=w; }
+  const n=m.n; return `<tr><th>${lab}</th><td>${P1(g+m.td,n)}</td><td>${g?(gy/g).toFixed(1):"–"}</td><td>${P1(fd+m.td+m.b,n)}</td><td>${P1(m.inc,n)}</td><td>${P1(m.qt,n)}</td><td>${P1(m.b+m.td,n)}</td><td>${P1(m.int+m.fum,n)}</td><td>${P1(m.pen,n)}</td></tr>`; }
+const VSHEAD=first=>`<thead><tr><th>${first}</th><th>Gain</th><th>Avg</th><th>10+</th><th>Inc</th><th>QT</th><th>Big</th><th>TO</th><th>Flag</th></tr></thead>`;
+function offByPlay(team,hl){
+  const cols=PBCOLS(); const pk=cols.includes(ui.pbPlay)?ui.pbPlay:(hl&&hl.pk)||"LP"; const isPlay=!!PLAYS[pk];
+  const name=k=>PLAYS[k]?PLAYS[k].name:k==="QT"?"QB trapped":"Breakaway";
+  const hiR=hl?(hl.pk===pk?hl.R:hl.fol===pk?hl.FR:null):null;
+  return `<div class="panel ${TEAMS[team].cls}"><h2>${TEAMS[team].name} offense: one play at a time</h2>
+   <div class="chips">${cols.map(k=>`<button class="${pk===k?"on":""}" data-act="pbplay" data-k="${k}">${PLAYS[k]?PLAYS[k].n+" ":""}${esc(name(k))}${RATE[team][k]>0?" ★":""}</button>`).join("")}</div>
+   <h2 style="margin-top:10px">${esc(name(pk))}</h2><div class="small">${isPlay?esc(PLAYS[pk].desc)+". ":pk==="QT"?"Rolled after a QT box: sack, throw-away, scramble or strip-sack. ":"Rolled after a B box: how far he goes. "}<b>${isPlay?esc(playLine(team,pk)):esc(colSummary(CHART[team][pk],"avg yards"))}</b></div>
+   <div class="tag">Your roll (10–39) → what the box says · % = chance of that roll</div>
+   ${rollGrid(gcell(CHART[team][pk]),hiR)}
+   ${isPlay?`<div class="tag">${esc(name(pk))} against each defense (the defense box is added in, real dice odds)</div>
+   <div class="tbl"><table class="vs">${VSHEAD("vs")}<tbody>${DEF_ORDER.map(d=>vsRow(matchup(team,pk,d),DEFS[d].short+(DEFRATE[other(team)][d]?"★":""),10)).join("")}</tbody></table></div>
+   <div class="small muted">Gain = chance of any gain. 10+ = chance of 10 or more yards on this roll, counting touchdowns and breakaways. Inc = incomplete. QT = QB trapped. Big = breakaway or touchdown box. TO = turnover (interception or fumble). ★ = the other team's strength.</div>`:""}
+   ${legend()}<button class="btn small" data-act="pbone" data-k="0">◀ Back to the full sheet</button></div>`;
+}
+function defByDef(team,dk,hl){
+  const def=other(team); const rate=DEFRATE[def][dk]||0;
+  const w=D=>D===5&&rate?DEFP[4]+DEFP[5]:rate?(D===1?0:DEFP[D-1]):DEFP[D];
+  return `<div class="panel"><h2>${TEAMS[def].name} defense: one formation at a time</h2>
+   <div class="chips">${DEF_ORDER.map(d=>`<button class="${dk===d?"on":""}" data-act="pbdef" data-d="${d}">${esc(DEFS[d].name)}${DEFRATE[def][d]?" ★":""}</button>`).join("")}</div>
+   <div class="small" style="margin-top:8px">${esc(DEFS[dk].desc)}. <b>${esc(defLine(team,dk))}</b>${rate?` · ★ your strength: +1 on the defense roll.`:""}</div>
+   <div class="tag">What your roll (1–5) does to each play · % = chance of that roll</div>
+   ${ALL_OFF.map(pk=>`<div class="drow ${hl&&hl.pk===pk?"hr":""}"><div class="dn">${PLAYS[pk].n} · ${esc(PLAYS[pk].name)}</div><div class="rgr d5">${[1,2,3,4,5].map(D=>{ const c=defBox(pk,dk,D); return `<div class="rgc ${boxCls(c)}${hl&&hl.pk===pk&&hl.D===D?" hi":""}"><i>${D}</i><b>${esc(boxTxt(c))}</b><small>${P1(w(D),36)}</small></div>`; }).join("")}</div></div>`).join("")}
+   <div class="tag">What ${TEAMS[team].name} get against ${esc(DEFS[dk].name)}</div>
+   <div class="tbl"><table class="vs">${VSHEAD("Play")}<tbody>${ALL_OFF.map(pk=>vsRow(matchup(team,pk,dk),esc(PLAYS[pk].name),10)).join("")}</tbody></table></div>
+   ${legend()}<button class="btn small" data-act="pbone" data-k="0">◀ Back to the full sheet</button></div>`;
 }
 function legend(){ return `<div class="legend small"><span><span class="mini blk">+6</span> gain</span><span><span class="mini wht">0</span> no gain</span><span><span class="mini red">−3</span> loss / turnover / QT</span><span><span class="mini yel">DEF 5</span> flag</span><span><span class="mini brk">B</span> breakaway</span><span><span class="mini inc">INC</span> black = incomplete</span><span>( ) overrules the other box</span><span><u>*</u> out of bounds / auto first down</span><span>★ team strength</span></div>`; }
 function howToRead(){
@@ -1192,9 +1261,9 @@ function howToRead(){
    <div class="panel"><h2>Where the numbers come from</h2><p class="small">Each column was built to match the team's real 2022 season: Chiefs 66.8% completions, 8.1 yards per pass, 1.8% interceptions, 3.8% sacked, 4.7 per carry. Eagles 65.3%, 8.1, 1.7%, 7.6% sacked, 4.6 per carry. Where each kind of box sits comes from 30 real 1983 Paydirt team charts: on every play and roll we counted how often those charts put an incomplete, QT, flag, interception, fumble or breakaway there, and put ours in the same spots. That is why passes have long black runs of incompletes in the 30s, Long Pass most of all, and why flags gather on 19, 29 and 39 and the rare 10s. The yard boxes then rise smoothly: the common 30s and 20s hold everyday gains, the rare 10s the extremes.</p></div>`;
 }
 function diceKey(){
-  const row=(n,cls,map,note)=>`<tr><th><span class="die ${cls} sm">${n}</span></th>${map.map(v=>`<td>${v}</td>`).join("")}<td class="small muted">${note}</td></tr>`;
+  const row=(n,ck,map,note)=>`<tr><th><span class="die sm" style="${dstyle(ck)}"></span> ${n}</th>${map.map(v=>`<td>${v}</td>`).join("")}<td class="small muted">${note}</td></tr>`;
   return `<div class="tbl"><table class="dk"><thead><tr><th>Die</th>${[1,2,3,4,5,6].map(f=>`<th>${f}</th>`).join("")}<th></th></tr></thead><tbody>
-   ${row("Black","blk",BLACK.map(v=>v*10),"tens (offense)")}${row("White","wht",WHITE,"ones (offense)")}${row("Blue","blu",BLUE,"ones (offense)")}${row("Red","red",RED,"defense")}${row("Green","grn",GREEN,"defense")}</tbody></table></div>`;
+   ${(()=>{const D=diceCfg(S); return row(dname(0),D.c[0],BLACK.map(v=>v*10),"offense: tens")+row(dname(1),D.c[1],WHITE,"offense: ones")+row(dname(2),D.c[2],BLUE,"offense: ones")+row(dname(D.d[0]),D.c[D.d[0]],RED,"defense: first die")+row(dname(D.d[1]),D.c[D.d[1]],GREEN,"defense: second die");})()}</tbody></table></div>`;
 }
 function rulesView(){
   const s=S;
@@ -1233,7 +1302,7 @@ function adminView(){
    <div class="row">${s.paused?`<button class="btn primary" data-act="send" data-a='{"type":"pause","on":false}'>▶ Resume game</button>`:`<button class="btn" data-act="confirm" data-what="pause">⏸ Pause game</button>`}
    <button class="btn" data-act="confirm" data-what="undo" ${s.prev?"":"disabled"}>↶ Undo last play</button>
    <button class="btn danger" data-act="confirm" data-what="newgame">Restart game</button></div></div>
-   ${settingsBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>`;
+   ${settingsBox()}${diceBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>`;
 }
 function shareURL(){ const base=location.href.split("#")[0]; return net.via==="db"?base:`${base}#${S.code}`; }
 function shareBox(){
@@ -1256,7 +1325,7 @@ function drawQR(){
 // ---------- TV ----------
 function tvView(){
   const s=S;
-  return `<div class="tv">${scoreboard(true)}${field(true)}${resultBanner()}<div class="tvwait">${esc(waitingText())}</div>
+  return `<div class="tv">${scoreboard(true)}${field(true)}${resultBanner()}<div class="tvwait">${esc(waitingText())}</div>${s.phase==="lobby"&&net.via!=="db"&&mode!=="local"?`<div class="panel"><h2>Scan to join</h2>${shareBox()}</div>`:""}
    <div class="row" style="justify-content:space-between"><span class="tag">Join: ${esc(net.via==="db"?"open this page":shareURL())}</span><button class="btn ghost small" data-act="tab" data-t="field">Exit TV view</button></div></div>`;
 }
 
@@ -1279,7 +1348,7 @@ function homeView(){
 
 // ---------- App shell ----------
 function tabs(){
-  const t=ui.tab||"field"; const items=[["field","Field","🏈"],["book","Playbook","📋"],["team","Teams","👥"],["rules","Rules","📖"]]; if(isAdmin()) items.push(["admin","Admin","⚙"]);
+  const t=ui.tab||"field"; const items=ui.spectator&&!me()?[["field","Field","🏈"],["rules","Rules","📖"]]:[["field","Field","🏈"],["book","Playbook","📋"],["team","Teams","👥"],["rules","Rules","📖"]]; if(isAdmin()) items.push(["admin","Admin","⚙"]);
   return `<nav class="tabbar">${items.map(([k,l,i])=>`<button class="${t===k?"on":""}" data-act="tab" data-t="${k}"><span aria-hidden="true">${i}</span>${l}</button>`).join("")}<button data-act="tab" data-t="tv"><span aria-hidden="true">📺</span>TV</button></nav>`;
 }
 function headerBar(){
@@ -1295,7 +1364,10 @@ function confirmModal(){
 function render(){ try{ render0(); }catch(e){ showCrash(e&&e.message); } }
 function render0(){
   if(mode==="host"||mode==="local") keepAwake();
-  if(S){ if(ui.lastPhase==="lobby"&&S.phase!=="lobby"&&ui.tab!=="tv") ui.tab="field"; ui.lastPhase=S.phase; }
+  // The TV / cast screen (and a computer that only hosts) never joins a team and never sees a playbook.
+  if(S&&mode==="host"&&!me()&&!isAdmin()) ui.spectator=true;
+  if(S&&ui.spectator&&!me()&&(ui.tab==="book"||ui.tab==="team"||ui.tab==="admin")) ui.tab="tv";
+  if(S){ if(ui.lastPhase==="lobby"&&S.phase!=="lobby"&&ui.tab!=="tv") ui.tab=ui.spectator&&!me()?"tv":"field"; ui.lastPhase=S.phase; }
   const y=window.scrollY; const active=document.activeElement&&document.activeElement.id; const val=active&&document.getElementById(active)?document.getElementById(active).value:null;
   let html="";
   if(mode==="none"||!S){ html=homeView(); if(mode!=="none"&&!S) html=headerBar()+`<div class="panel"><div class="wait">${esc(net.status||"Connecting…")}</div><button class="btn ghost" data-act="leavegame">Back</button></div>`; }
@@ -1303,7 +1375,7 @@ function render0(){
   else {
     const t=ui.tab||"field"; let body="";
     if(t==="field") body=`${scoreboard()}${field()}${resultBanner()}${S.phase!=="lobby"&&!me()&&!isAdmin()&&!ui.spectator?joinBox():""}${ui.spectator&&S.phase!=="lobby"?"":turnPanel()}${S.phase!=="lobby"?logPanel():""}`;
-    if(t==="book") body=playbookView();
+    if(t==="book") body=ui.spectator&&!me()?`<div class="panel"><div class="wait">The TV screen doesn't show playbooks.</div></div>`:playbookView();
     if(t==="team") body=S.phase==="lobby"?lobbyPanel():`${joinBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>`;
     if(t==="rules") body=rulesView();
     if(t==="admin"&&isAdmin()) body=adminView();
@@ -1328,6 +1400,10 @@ app.addEventListener("click",e=>{
   if(A==="send"){ let a; try{a=JSON.parse(b.dataset.a);}catch(_){return;} if(a.type==="call"&&!a.play) return; if(a.type==="call"||a.type==="roll"){ ui.sel=null; ui.md={}; ui.onside=false; } if(a.type==="call"){ ui.tempo="normal"; ui.obd=""; ui.coffin=false; } act(a); return; }
   if(A==="pick"){ ui.sel={key:b.dataset.key,play:b.dataset.play}; render(); return; }
   if(A==="tempo"){ ui.tempo=b.dataset.k; render(); return; }
+  if(A==="pbplay"){ ui.pbPlay=b.dataset.k; render(); return; }
+  if(A==="pbone"){ ui.pbOne=b.dataset.k==="1"; render(); return; }
+  if(A==="pbcat"){ ui.pbCat=b.dataset.k; render(); return; }
+  if(A==="pbzoom"){ const z=Math.round(((ui.pbZoom||(innerWidth<500?0.85:1))+(+b.dataset.k)*0.15)*100)/100; ui.pbZoom=Math.max(0.55,Math.min(1.9,z)); render(); return; }
   if(A==="obd"){ ui.obd=b.dataset.k; render(); return; }
   if(A==="coffin"){ ui.coffin=b.dataset.k==="1"; render(); return; }
   if(A==="face"){ ui.md[b.dataset.k]=+b.dataset.v; render(); return; }
@@ -1336,7 +1412,7 @@ app.addEventListener("click",e=>{
   if(A==="pbdef"){ ui.pbDef=b.dataset.d; render(); return; }
   if(A==="pbsub"){ ui.pbSub=b.dataset.k; render(); return; }
   if(A==="pbclear"){ ui.pbHL=false; render(); return; }
-  if(A==="lookup"){ const l=S&&S.last; if(l&&l.team&&!(l.pk&&PLAYS[l.pk])){ ui.pbSub="st"; ui.pbHL=true; } else if(l&&l.team){ ui.pbTeam=l.team; ui.pbDef=l.dk||"A"; const mm=me(); ui.pbSub=(mm&&mm.team&&mm.team!==l.team)?"def":"off"; ui.pbHL=true; } ui.tab="book"; window.scrollTo(0,0); render(); setTimeout(()=>{ const h=document.querySelector(".pd td.hi"); if(h) h.scrollIntoView({block:"center",inline:"center"}); },50); return; }
+  if(A==="lookup"){ const l=S&&S.last; if(l&&l.team&&!(l.pk&&PLAYS[l.pk])){ ui.pbSub="st"; ui.pbHL=true; ui.pbCat="st"; ui.pbOne=false; } else if(l&&l.team){ ui.pbTeam=l.team; ui.pbDef=l.dk||"A"; const mm=me(); ui.pbSub=(mm&&mm.team&&mm.team!==l.team)?"def":"off"; ui.pbHL=true; ui.pbOne=false; ui.pbCat=l.fol&&(l.fol.kind==="QT"||l.fol.kind==="B")?"qt":PBCAT.pass[1].includes(l.pk)?"pass":"run"; } ui.tab="book"; window.scrollTo(0,0); render(); setTimeout(()=>{ const h=document.querySelector(".pd td.hi"); if(h) h.scrollIntoView({block:"center",inline:"center"}); },50); return; }
   if(A==="join"){ const n=(document.getElementById("pname")||{}).value||""; if(!n.trim()){ ui.err="Type your name first."; render(); return; } localSet("tb.name",n.trim()); ui.name=null; ui.spectator=false; act({type:"join",name:n.trim(),team:b.dataset.team}); return; }
   if(A==="confirm"){ ui.confirm={what:b.dataset.what,team:b.dataset.team,pid:b.dataset.pid}; render(); return; }
   if(A==="confirmno"){ ui.confirm=null; render(); return; }
@@ -1354,6 +1430,9 @@ app.addEventListener("click",e=>{
 app.addEventListener("change",e=>{
   if(e.target.id==="onside"){ ui.onside=e.target.checked; render(); }
   if(e.target.id==="manualdice"){ ui.manual=e.target.checked; ui.md={}; render(); }
+  if(e.target.dataset&&e.target.dataset.dice!=null||e.target.id==="dicedef"){ const D=diceCfg(S); const c=D.c.slice(); let d=D.d.slice();
+    if(e.target.id==="dicedef") d=e.target.value.split("").map(Number); else c[+e.target.dataset.dice]=e.target.value;
+    act({type:"dice",c,d}); return; }
   if(e.target.id==="nq"||e.target.id==="qmin"){ act({type:"settings",nq:+(document.getElementById("nq")||{}).value,qmin:+(document.getElementById("qmin")||{}).value}); }
 });
 app.addEventListener("input",e=>{ if(e.target.id==="pname") ui.name=e.target.value; if(e.target.id==="code") ui.code=e.target.value.toUpperCase(); });

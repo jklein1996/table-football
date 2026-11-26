@@ -285,6 +285,26 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center;
 .rgc.hi{outline:3px solid var(--kcgold);outline-offset:1px;z-index:1}
 .odds2{display:flex;flex-wrap:wrap;gap:4px 12px;margin:6px 0 8px;font-size:13px}
 .odds2 b{font-family:var(--mono)} .odds2 small{color:var(--dim)} .odds2 .fd{flex-basis:100%;color:var(--kcgold)}
+.dicecfg{display:grid;gap:8px;margin:8px 0}
+.dicecfg label{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 8px;font-weight:600}
+.dicecfg label small{grid-column:2;grid-row:2;color:var(--dim);font-weight:400;font-size:11.5px}
+.dicecfg select{grid-column:3;grid-row:1/3}
+.die.sm{display:inline-block}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chips button{font:600 13px var(--body);padding:7px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel2,#1a2a24);color:inherit}
+.chips button.on{background:var(--kcgold);color:#1a1300;border-color:var(--kcgold)}
+table.vs{width:100%;border-collapse:collapse;font:12px var(--mono)}
+table.vs th,table.vs td{padding:5px 3px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}
+table.vs thead th{font:600 10.5px var(--body);color:var(--dim)} table.vs tbody th{text-align:left;font:600 12px var(--body)}
+.drow{margin:6px 0}.drow .dn{font:600 12.5px var(--body);margin-bottom:2px}.drow.hr .dn{color:var(--kcgold)}
+.rgc b{white-space:normal;word-break:break-word;font-size:10px;line-height:1.05}
+table.vs{font-size:11px} table.vs th,table.vs td{padding:4px 2px} table.vs thead th{font-size:9.5px;white-space:normal} table.vs tbody th{font-size:11px;white-space:normal}
+.zoombar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0}
+.zoombar .btn.small{min-width:38px}
+.zoomwrap{max-width:100%}
+.zoomwrap .pd{max-height:72vh}
+.seg.wrap4{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pd td.pr{min-width:22px}
 
 </style>
 </head>
@@ -293,8 +313,8 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center;
 <canvas class="confetti" id="confetti" hidden></canvas>
 <script src="js/peerjs.min.js"></script>
 <script src="js/qrcode.js"></script>
-<script src="js/relay-url.js?v=9"></script>
-<script src="js/relay.js?v=9"></script>
-<script src="js/game.js?v=9"></script>
+<script src="js/relay-url.js?v=11"></script>
+<script src="js/relay.js?v=11"></script>
+<script src="js/game.js?v=11"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@ A family dice football game based on Super Bowl LVII (Chiefs 38, Eagles 35), ins
 - Everyone else opens the same link, enters the code, types a name and joins the Chiefs or Eagles.
 - Play callers and dice rollers rotate through each team in join order.
 - Use the **TV** tab on a laptop or cast a browser tab to show the big field and scoreboard.
-- Regular 1–6 dice work: tens die 1–2 = 10, 3–4 = 20, 5–6 = 30; ones dice count face − 1.
+- Three regular dice work for both sides. Set their colors in the lobby; the Rules tab shows how each face reads.
+- Project notes, rules and decisions: [docs/PROJECT.md](docs/PROJECT.md).
 
 The admin phone hosts the game (peer-to-peer via PeerJS), so keep it open with the screen on.
