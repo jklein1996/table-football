@@ -220,15 +220,16 @@ function actionCard(n,asAdmin){
       sheet=`<div class="clockbox"><div><b>${fmtClock(s.clock)}</b> left · clock ${s.running?"running":"stopped"}</div><div class="small">This snap uses <b>${use}s</b>${s.running?` (${hud}s huddle + 10s play)`:" (10s play)"}, leaving <b>${fmtClock(Math.max(0,left))}</b>. If the play ends in bounds, the clock keeps running and the next huddle costs more.</div>${warn}</div>
       <div class="tag">Tempo (how much clock runs before the snap)</div><div class="seg">${Object.keys(TEMPO).map(k=>`<button class="${tempo===k?"on":""}" data-act="tempo" data-k="${k}">${TEMPO[k].name}<small>${s.running?`−${TEMPO[k].secs}s`:"clock stopped"}</small></button>`).join("")}</div>
       <div class="tag">Sideline call (runs and passes)</div><div class="seg">${[["","Normal","play it as it comes"],["out","Get out of bounds","clock stops, −5 yds"],["in","Stay in bounds","clock runs, −5 on * boxes"]].map(([k,nm2,sub])=>`<button class="${(ui.obd||"")===k?"on":""}" data-act="obd" data-k="${k}">${nm2}<small>${sub}</small></button>`).join("")}</div>
-      <div class="plays">${ALL_OFF.map(k=>{const r=RATE[n.team][k]||0;return `<button class="play ${sel===k?"sel":""}" data-act="pick" data-key="${key}" data-play="${k}"><b>${PLAYS[k].n} · ${PLAYS[k].name}</b><span class="s">${PLAYS[k].desc}</span><span class="s st">${playLine(n.team,k)}</span><span class="s clk">⏱ stops the clock ~${clockStopPct(n.team,k)}%</span>${r>0?'<span class="stars">★ team strength</span>':""}</button>`;}).join("")}
-      ${s.phase==="play"?`<button class="play ${sel==="PUNT"?"sel":""}" data-act="pick" data-key="${key}" data-play="PUNT"><b>Punt</b><span class="s">${s.down===4?"Smart on 4th down":"Any down"}</span><span class="s st">${puntLine(n.team)}</span></button>
+      ${callChart(n.team,sel,key)}
+      ${s.phase==="play"?`<div class="tag">Kicks and clock plays</div><div class="plays sym">
+      <button class="play ${sel==="PUNT"?"sel":""}" data-act="pick" data-key="${key}" data-play="PUNT"><b>Punt</b><span class="s">${s.down===4?"Smart on 4th down":"Any down"}</span><span class="s st">${puntLine(n.team)}</span></button>
       <button class="play ${sel==="FG"?"sel":""}" data-act="pick" data-key="${key}" data-play="FG" ${dist<=64?"":"disabled"}><b>Field Goal</b><span class="s">${dist<=64?`${dist} yds · ${fgChance(dist,n.team)}% good · ${pct(OFFP[10])} blocked`:"Too far"}</span></button>
       <button class="play ${sel==="SPIKE"?"sel":""}" data-act="pick" data-key="${key}" data-play="SPIKE"><b>Spike</b><span class="s">Stop the clock, lose a down</span></button>
-      <button class="play ${sel==="KNEEL"?"sel":""}" data-act="pick" data-key="${key}" data-play="KNEEL"><b>Kneel</b><span class="s">Lose 1, keep clock running</span></button>`:""}</div>
-      ${sel&&PLAYS[sel]?`<div class="tag">${esc(PLAYS[sel].name)}: every roll and what it gives you</div>${rollGrid(gcell(CHART[n.team][sel]),null)}<div class="small"><b>${esc(playLine(n.team,sel))}</b></div>`:""}
+      <button class="play ${sel==="KNEEL"?"sel":""}" data-act="pick" data-key="${key}" data-play="KNEEL"><b>Kneel</b><span class="s">Lose 1, keep clock running</span></button></div>`:""}
       ${sel==="PUNT"?`<div class="tag">Punt type</div><div class="seg">${[["","Normal punt","they roll a return"],["1","Coffin corner",`${COFFIN} yds shorter, no return`]].map(([k,nm2,sub])=>`<button class="${(ui.coffin?"1":"")===k?"on":""}" data-act="coffin" data-k="${k}">${nm2}<small>${sub}</small></button>`).join("")}</div>`:""}`;
     } else {
-      sheet=`<div class="plays">${DEF_ORDER.map(k=>{const r=DEFRATE[n.team][k];return `<button class="play def ${sel===k?"sel":""}" data-act="pick" data-key="${key}" data-play="${k}"><b>${DEFS[k].name}</b><span class="s">${DEFS[k].desc}</span><span class="s st">${defLine(s.poss,k)}</span>${r>0?'<span class="stars">★ team strength: +1 on your defense roll</span>':""}</button>`;}).join("")}</div>`;
+      sheet=`<div class="plays sym">${DEF_ORDER.map(k=>{const r=DEFRATE[n.team][k];return `<button class="play def ${sel===k?"sel":""}" data-act="pick" data-key="${key}" data-play="${k}"><b>${DEFS[k].name}</b><span class="s">${DEFS[k].desc}</span><span class="s st">${defLine(s.poss,k)}</span>${r>0?'<span class="stars">★ team strength: +1 on your defense roll</span>':""}</button>`;}).join("")}</div>
+      <div class="tag">${esc(DEFS[sel||"A"].name)} defense chart: what your roll (1–5) does to each play${sel?"":" (tap a formation above)"}</div>${zoomBar()}<div class="zoomwrap" style="zoom:${ui.pbZoom||1}">${defChart(sel||"A",null,s.poss)}</div>`;
     }
     const a=JSON.stringify({type:"call",side:n.side,play:sel,tempo:ui.tempo||"normal",ob:ui.obd||"",coffin:!!ui.coffin});
     return `<div class="panel ${T.cls} turn">${tag}<h2>Your call: ${T.name} ${n.side==="off"?"offense":"defense"}</h2><div class="small muted">${n.side==="off"?`${ord(s.down)} & ${toGoal(s)<=s.toGo?"Goal":s.toGo} at ${spotName(s.ball)}. Keep your phone hidden from the other team.`:`Guess what ${TEAMS[s.poss].name} will run.`}</div>${sheet}
@@ -243,7 +244,7 @@ function actionCard(n,asAdmin){
     const manual=ui.manual?`<div class="manual">${off?face("t",dname(0)+" die (tens)",0,BLACK,10)+face("a",dname(1)+" die",1,WHITE)+face("b",dname(2)+" die",2,BLUE):face("d1",dname(DC.d[0])+" die",DC.d[0],RED)+face("d2",dname(DC.d[1])+" die",DC.d[1],GREEN)}</div>
       <button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side,onside:isKO&&!!ui.onside,dice:Object.fromEntries(keys.map(k=>[k,md[k]||0]))}))}' ${ready?"":"disabled"}>Submit my dice</button>`:
       `<button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side,onside:isKO&&!!ui.onside}))}'>🎲 ${isKO&&ui.onside?"Onside kick: roll":"Roll"} ${off?`all 3 dice`:`the ${dname(diceCfg(s).d[0]).toLowerCase()} & ${dname(diceCfg(s).d[1]).toLowerCase()} dice`}</button>`;
-    return `<div class="panel ${T.cls} turn">${tag}<h2>Your roll: ${T.name} ${what}</h2>${folNote}${isKO?`<label class="row small"><input type="checkbox" id="onside" ${ui.onside?"checked":""}> Onside kick (you recover on 36–39, about 1 in 7; otherwise they get it at your 45)</label>`:""}<label class="row small muted"><input type="checkbox" id="manualdice" ${ui.manual?"checked":""}> I'm rolling real dice</label>${manual}</div>`;
+    return `<div class="panel ${T.cls} turn">${tag}<h2>Your roll: ${T.name} ${what}</h2>${folNote}${isKO?`<label class="row small"><input type="checkbox" id="onside" ${ui.onside?"checked":""}> Onside kick (you recover on 36–39, about 1 in 7; otherwise they get it at your 45)</label>`:""}<div class="seg two dicemode"><button class="${ui.manual?"on":""}" data-act="dicemode" data-k="1">🎲 Our own dice<small>tap what you rolled</small></button><button class="${ui.manual?"":"on"}" data-act="dicemode" data-k="0">📱 App rolls for us<small>only if you pick this</small></button></div>${manual}</div>`;
   }
   return "";
 }
@@ -272,11 +273,11 @@ function diceBox(){
   return `<div class="panel"><h2>Your dice</h2><div class="small muted">Pick the colors of the 3 dice at the table. Both teams roll the same dice.</div>
    <div class="dicecfg">${[0,1,2].map(i=>`<label><span class="die sm" style="${dstyle(D.c[i])}"></span> Die ${i+1} <small>${i===0?"tens: 1=10, 2–3=20, 4–6=30":i===1?"ones: face − 1 (0–5)":"ones: 1–2=0, then face − 2 (0–4)"}</small>${sel(i)}</label>`).join("")}</div>
    <label class="small muted" for="dicedef">Defense rolls these two</label><select id="dicedef" class="btn">${pairs.map(([a,b])=>`<option value="${a}${b}" ${D.d[0]===a&&D.d[1]===b?"selected":""}>${DCOLS[D.c[a]][0]} (die ${a+1}) + ${DCOLS[D.c[b]][0]} (die ${b+1})</option>`).join("")}</select>
-   <div class="small muted">Defense: first die 1–3 = 1, 4–5 = 2, 6 = 3; second die 1–4 = 0, 5 = 1, 6 = 2. Add them (1–5). Prefer the app to roll? Just tap Roll.</div></div>`;
+   <div class="small muted">Defense: first die 1–3 = 1, 4–5 = 2, 6 = 3; second die 1–4 = 0, 5 = 1, 6 = 2. Add them (1–5). Every roll uses your own dice by default (tap the faces you rolled). Switch a roll to "App rolls for us" only if you want to.</div></div>`;
 }
 function settingsBox(){
   const s=S; const locked=!(s.phase==="lobby"||s.phase==="toss");
-  return `<div class="panel"><h2>Game length</h2><div class="row"><label class="small muted" for="nq">Quarters</label><select id="nq" class="btn">${NQS.map(n=>`<option value="${n}" ${s.nq===n?"selected":""}>${n}</option>`).join("")}</select>
+  return `<div class="panel"><h2>Game length</h2><div class="glen"><label class="small muted" for="nq">Quarters</label><select id="nq" class="btn">${NQS.map(n=>`<option value="${n}" ${s.nq===n?"selected":""}>${n}</option>`).join("")}</select>
    <label class="small muted" for="qmin">Minutes per quarter</label><select id="qmin" class="btn" ${locked?"disabled":""}>${QMINS.map(n=>`<option value="${n}" ${s.qmin===n?"selected":""}>${n} min</option>`).join("")}</select></div>
    <div class="small muted">About ${Math.round(s.nq*s.qmin*2)} snaps and kicks, roughly ${Math.round(s.nq*s.qmin*2*40/60/5)*5} minutes at the table. 15 minutes is the real Paydirt length; pick 5 or 8 for a quicker game.</div></div>`;
 }
@@ -334,17 +335,28 @@ function playbookView(){
   return `${locked?`<div class="panel slim ${TEAMS[myT].cls}"><div class="small"><b>${TEAMS[myT].name} ${side==="off"?"on offense":"on defense"}.</b> ${side==="off"?"You see your offense chart. Your defense chart shows up when the other team has the ball.":"You see your defense chart. Your offense chart shows up when you get the ball back."}</div></div>`:`<div class="seg wide">${["KC","PHI"].map(t=>`<button class="${team===t?"on":""}" data-act="pb" data-t="${t}">${TEAMS[t].name} on offense</button>`).join("")}</div>`}
    ${okL||stL?`<div class="panel slim">${lookupLine(l).replace(/<button[^>]*>.*?<\/button>/,`<button class="btn ghost sm" data-act="pbclear">Clear highlight</button>`)}</div>`:""}
    <div class="seg">${allowed.map(k=>`<button class="${sub===k?"on":""}" data-act="pbsub" data-k="${k}">${SUBN[k]}</button>`).join("")}</div>
-   ${sub==="off"?(ui.pbOne?offByPlay(team,hlO):offSheet(team,hlO,hlS)):""}
-   ${sub==="def"&&ui.pbOne?defByDef(team,dk,hlD):""}
-   ${sub==="def"&&!ui.pbOne?`<div class="panel"><h2>${TEAMS[def].name} defense chart</h2>
-    <div class="seg">${DEF_ORDER.map(d=>`<button class="${dk===d?"on":""}" data-act="pbdef" data-d="${d}">${DEFS[d].name}</button>`).join("")}</div>
+   ${sub==="off"?offSheet(team,hlO,hlS):""}
+   ${sub==="def"?`<div class="panel"><h2>${TEAMS[def].name} defense chart</h2>
+    <div class="seg g3">${DEF_ORDER.map(d=>`<button class="${dk===d?"on":""}" data-act="pbdef" data-d="${d}">${DEFS[d].name}</button>`).join("")}</div>
     <div class="small">${esc(DEFS[dk].desc)}. Find the play down the left and the defense roll (red + green, 1–5) across the top.${DEFRATE[def][dk]?` ${TEAMS[def].name} ★ ${DEFS[dk].short}: add 1 to the defense roll (max 5).`:""}</div>
     ${zoomBar()}<div class="zoomwrap" style="zoom:${ui.pbZoom||1}">${defChart(dk,hlD,team)}</div>
     <div class="tag">What ${TEAMS[team].name} get against ${esc(DEFS[dk].name)}</div>
     <div class="tbl"><table class="vs">${VSHEAD("Play")}<tbody>${ALL_OFF.map(pk=>vsRow(matchup(team,pk,dk),esc(PLAYS[pk].name),10)).join("")}</tbody></table></div>
-    ${legend()}<button class="btn small" data-act="pbone" data-k="1">Show one formation at a time</button></div>`:""}
-   ${sub==="st"?`<div class="panel ${TEAMS[stT].cls}"><h2>${TEAMS[stT].name} kicks & returns</h2><div class="small">Roll the offense dice (black + white + blue). The box is the final result; don't use the defense chart.</div>${stChart(stT,hlS)}</div>`:""}
+    ${legend()}</div>`:""}
+   ${sub==="st"?`<div class="panel ${TEAMS[stT].cls}"><h2>${TEAMS[stT].name} kicks & returns</h2><div class="small">Roll all 3 dice (${esc(dname(0))} = tens, ${esc(dname(1))} and ${esc(dname(2))} = ones). The box is the final result; don't use the defense chart.</div>${stChart(stT,hlS)}</div>`:""}
    ${sub==="how"?howToRead():""}`;
+}
+// The offense call card IS the Paydirt sheet: tap a play's column (header or any box) to pick it.
+function callChart(team,sel,key){
+  const cats={run:["Running",PBCAT.run[1]],pass:["Passing",PBCAT.pass[1]]};
+  const cat=cats[ui.callCat]?ui.callCat:(sel&&PBCAT.pass[1].includes(sel)?"pass":"run"); const cols=cats[cat][1];
+  const pick=k=>`data-act="pick" data-key="${key}" data-play="${k}"`;
+  return `<div class="seg two">${Object.keys(cats).map(k=>`<button class="${cat===k?"on":""}" data-act="callcat" data-k="${k}">${cats[k][0]}</button>`).join("")}</div>
+   <div class="small muted">Tap a play's name or any box in its column to pick it. Your roll (10–39) is down the left.</div>
+   ${zoomBar()}<div class="zoomwrap" style="zoom:${ui.pbZoom||1}"><div class="pd pick"><table><thead><tr><th class="rk">Roll</th><th class="pr">Odds</th>${cols.map(k=>`<th class="${sel===k?"hc":""}"><button class="colpick ${sel===k?"on":""}" ${pick(k)}>${PLAYS[k].n} · ${esc(PLAYS[k].name)}${RATE[team][k]>0?" ★":""}</button></th>`).join("")}</tr></thead><tbody>
+   ${ROLLS.map(R=>`<tr class="${R%10===0?"dec":""}"><th class="rk">${R}</th><td class="pr">${OFFP[R]}</td>${cols.map(k=>{ const c=CHART[team][k][R]; return `<td class="bx ${boxCls(c)}${sel===k?" selc":""}" ${pick(k)}><b>${esc(cellTxt(c))}</b>${c&&c.ob?`<u>*</u>`:""}</td>`; }).join("")}</tr>`).join("")}
+   <tr class="odds"><th class="rk">Odds</th><td class="pr">of 216</td>${cols.map(k=>`<td ${pick(k)}>${colOdds(team,k)}<br>⏱ stops ${clockStopPct(team,k)}%</td>`).join("")}</tr></tbody></table></div></div>
+   ${sel&&PLAYS[sel]?`<div class="small"><b>${esc(PLAYS[sel].name)}:</b> ${esc(PLAYS[sel].desc)}. ${esc(playLine(team,sel))}</div>`:""}`;
 }
 // The classic Paydirt sheet, split into tabs so each fits a phone: Running, Passing, QB trapped & Breakaway, Special teams.
 const PBCAT={run:["Running",["LP","OT","ER","DR","QS"]],pass:["Passing",["SC","SP","MP","LG","SL","HM"]],qt:["QB trapped & Breakaway",["QT","B"]],st:["Special teams",null]};
@@ -356,8 +368,7 @@ function offSheet(team,hl,hlS){
   return `<div class="panel ${TEAMS[team].cls}"><h2>${TEAMS[team].name} offense sheet</h2>
    <div class="seg wrap4">${Object.keys(PBCAT).map(k=>`<button class="${cat===k?"on":""}" data-act="pbcat" data-k="${k}">${PBCAT[k][0]}</button>`).join("")}</div>
    <div class="small">${note} Odds = how many of the 216 dice combinations make that roll; the bottom row sums up each column.</div>
-   ${zoomBar()}<div class="zoomwrap" style="zoom:${ui.pbZoom||1}">${body}</div>${legend()}
-   <button class="btn small" data-act="pbone" data-k="1">Show one play at a time, with odds vs each defense</button></div>`;
+   ${zoomBar()}<div class="zoomwrap" style="zoom:${ui.pbZoom||1}">${body}</div>${legend()}</div>`;
 }
 // Phone view of the playbook: one play at a time, every roll with its number and odds,
 // then how that play does against each defense.
@@ -510,13 +521,15 @@ function headerBar(){
 }
 function confirmModal(){
   const c=ui.confirm; if(!c) return "";
-  const msgs={newgame:["Restart the game?","The score, clock and play log reset for everyone. Players stay on their teams."],pause:["Pause the game?","Nobody can call or roll until you resume."],undo:["Undo the last play?","The field, score and clock go back one play."],kick:["Remove this player?","They can join again with the code."],takeover:["Take over hosting?","This phone becomes the host, with a new game code, starting from the last play it saw. Everyone else rejoins with the new code and keeps their team."],timeout:["Call a timeout?",`Stops the clock. ${TEAMS[c.team]?TEAMS[c.team].name:""} will have ${S&&c.team?S.to[c.team]-1:0} left this half.`]};
+  const msgs={newgame:["Restart the game?","The score, clock and play log reset for everyone. Players stay on their teams."],pause:["Pause the game?","Nobody can call or roll until you resume."],undo:["Undo the last play?","The field, score and clock go back one play."],kick:["Remove this player?","They can join again with the code."],leave:["Leave the game?",mode==="host"?"This device is running the game for everyone. If you leave, nobody can play until you come back and tap Resume game.":"You can rejoin with the code and keep your team."],takeover:["Take over hosting?","This phone becomes the host, with a new game code, starting from the last play it saw. Everyone else rejoins with the new code and keeps their team."],timeout:["Call a timeout?",`Stops the clock. ${TEAMS[c.team]?TEAMS[c.team].name:""} will have ${S&&c.team?S.to[c.team]-1:0} left this half.`]};
   const [h,p]=msgs[c.what]||["Are you sure?",""];
   return `<div class="cover" role="dialog" aria-modal="true" aria-labelledby="cfh"><div class="inner modal"><h2 id="cfh">${h}</h2><p class="muted">${esc(p)}</p><div class="row"><button class="btn danger big" data-act="confirmyes">Yes, ${c.what==="timeout"?"call timeout":c.what==="newgame"?"restart":c.what==="takeover"?"take over":c.what}</button><button class="btn big" data-act="confirmno">No, go back</button></div></div></div>`;
 }
 function render(){ try{ render0(); }catch(e){ showCrash(e&&e.message); } }
 function render0(){
   if(mode==="host"||mode==="local") keepAwake();
+  if(mode!=="none"&&S&&!ui.histPushed){ ui.histPushed=true; try{ history.pushState({tb:1},"",location.href); }catch(_){} }
+  if(mode==="none") ui.histPushed=false;
   // The TV / cast screen (and a computer that only hosts) never joins a team and never sees a playbook.
   if(S&&mode==="host"&&!me()&&!isAdmin()) ui.spectator=true;
   if(S&&ui.spectator&&!me()&&(ui.tab==="book"||ui.tab==="team"||ui.tab==="admin")) ui.tab="tv";
@@ -532,7 +545,7 @@ function render0(){
     if(t==="team") body=S.phase==="lobby"?lobbyPanel():`${joinBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>`;
     if(t==="rules") body=rulesView();
     if(t==="admin"&&isAdmin()) body=adminView();
-    html=`${headerBar()}${body}<div class="row" style="justify-content:center"><button class="btn ghost small" data-act="leavegame">Leave game</button></div>${tabs()}`;
+    html=`${headerBar()}${body}<div class="row" style="justify-content:center"><button class="btn ghost small" data-act="confirm" data-what="leave">Leave game</button></div>${tabs()}`;
   }
   app.innerHTML=html+confirmModal();
   document.body.classList.toggle("tvmode",ui.tab==="tv");
@@ -546,6 +559,9 @@ function localGet(k){ try{return localStorage.getItem(k);}catch(e){return null;}
 function localSet(k,v){ try{localStorage.setItem(k,v);}catch(e){} }
 
 // ---------- Events ----------
+function doLeave(){ try{ if(net.peer) net.peer.destroy(); }catch(_){} net={status:"",peer:null,conns:[],hostConn:null,code:null,db:null,via:null}; mode="none"; S=null; ui.confirm=null; localSet("tb.in",""); setHash(""); render(); }
+// Back button: never drops you out of a game without asking.
+window.addEventListener("popstate",()=>{ if(mode!=="none"&&S){ try{ history.pushState({tb:1},"",location.href); }catch(_){} ui.confirm={what:"leave"}; render(); } });
 app.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]"); if(!b||b.disabled) return;
   const A=b.dataset.act;
@@ -555,6 +571,8 @@ app.addEventListener("click",e=>{
   if(A==="tempo"){ ui.tempo=b.dataset.k; render(); return; }
   if(A==="pbplay"){ ui.pbPlay=b.dataset.k; render(); return; }
   if(A==="pbone"){ ui.pbOne=b.dataset.k==="1"; render(); return; }
+  if(A==="dicemode"){ ui.manual=b.dataset.k==="1"; ui.md={}; localSet("tb.manual",ui.manual?"1":"0"); render(); return; }
+  if(A==="callcat"){ ui.callCat=b.dataset.k; render(); return; }
   if(A==="pbcat"){ ui.pbCat=b.dataset.k; render(); return; }
   if(A==="pbzoom"){ const z=Math.round(((ui.pbZoom||(innerWidth<500?0.85:1))+(+b.dataset.k)*0.15)*100)/100; ui.pbZoom=Math.max(0.55,Math.min(1.9,z)); render(); return; }
   if(A==="obd"){ ui.obd=b.dataset.k; render(); return; }
@@ -570,13 +588,13 @@ app.addEventListener("click",e=>{
   if(A==="confirm"){ ui.confirm={what:b.dataset.what,team:b.dataset.team,pid:b.dataset.pid}; render(); return; }
   if(A==="confirmno"){ ui.confirm=null; render(); return; }
   if(A==="confirmyes"){ const c=ui.confirm; ui.confirm=null;
-    if(c.what==="newgame") act({type:"newgame"}); else if(c.what==="pause") act({type:"pause",on:true}); else if(c.what==="undo") act({type:"undo"}); else if(c.what==="kick") act({type:"kick",pid:c.pid}); else if(c.what==="timeout") act({type:"timeout",team:c.team}); else if(c.what==="takeover") takeOver();
+    if(c.what==="newgame") act({type:"newgame"}); else if(c.what==="pause") act({type:"pause",on:true}); else if(c.what==="undo") act({type:"undo"}); else if(c.what==="kick") act({type:"kick",pid:c.pid}); else if(c.what==="timeout") act({type:"timeout",team:c.team}); else if(c.what==="takeover") takeOver(); else if(c.what==="leave"){ doLeave(); return; }
     render(); return; }
   if(A==="host"){ const code=genCode(); hostPeer(code,false); ui.tab="team"; return; }
   if(A==="resume"){ S=loadHost(); hostPeer(S.code,true); ui.tab="field"; return; }
   if(A==="local"){ mode="local"; net.via=null; S=(()=>{const h=loadHost(); return h&&h.v===4&&h.code==="LOCAL"?h:null;})()||freshState("LOCAL"); S.admin=myId; saveHost(); ui.tab="team"; render(); return; }
-  if(A==="joincode"){ const c=((document.getElementById("code")||{}).value||"").trim().toUpperCase(); if(c.length!==4){ ui.err="Enter the 4-letter game code."; render(); return; } ui.spectator=!!b.dataset.tv; ui.tab=ui.spectator?"tv":"team"; const h=loadHost(); if(h&&h.code===c&&h.admin===myId){ S=h; hostPeer(c,true); return; } joinPeer(c); return; }
-  if(A==="leavegame"){ try{ if(net.peer) net.peer.destroy(); }catch(_){} net={status:"",peer:null,conns:[],hostConn:null,code:null,db:null,via:null}; mode="none"; S=null; location.hash=""; render(); return; }
+  if(A==="joincode"){ const c=((document.getElementById("code")||{}).value||"").trim().toUpperCase(); if(c.length!==4){ ui.err="Enter the 4-letter game code."; render(); return; } ui.spectator=!!b.dataset.tv; ui.tab=ui.spectator?"tv":"team"; localSet("tb.in",JSON.stringify({c,tv:ui.spectator,at:Date.now()})); setHash(c); const h=loadHost(); if(h&&h.code===c&&h.admin===myId){ S=h; hostPeer(c,true); return; } joinPeer(c); return; }
+  if(A==="leavegame"){ doLeave(); return; }
   if(A==="copy"){ const u=shareURL(); if(navigator.clipboard) navigator.clipboard.writeText(u).then(()=>{b.textContent="Copied";},()=>{b.textContent="Select the link above";}); return; }
   if(A==="tvopen"){ ui.tab="tv"; render(); return; }
 });
@@ -607,6 +625,9 @@ setTimeout(function boot(){
   if(!hasClaude() && /^[A-Z]{4}$/.test(code)){
     const h=loadHost();
     if(h&&h.code===code&&(h.admin===myId||h.host===myId)){ S=h; ui.tab="field"; hostPeer(code,true); return; }
+    // A reload puts a player (or the TV) straight back into the game they were in.
+    let was=null; try{ was=JSON.parse(localGet("tb.in")||"null"); }catch(_){}
+    if(was&&was.c===code&&Date.now()-was.at<18*3600e3){ ui.spectator=!!was.tv; ui.tab=was.tv?"tv":"field"; joinPeer(code); return; }
     ui.code=code;
   }
   render();

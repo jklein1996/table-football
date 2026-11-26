@@ -9,6 +9,8 @@ const DCOLS={black:["Black","#0b0b0b","#fff"],white:["White","#f4f1ea","#111"],r
   yellow:["Yellow","#f2c200","#111"],orange:["Orange","#f26a1b","#fff"],purple:["Purple","#6b3fb5","#fff"],pink:["Pink","#ff6fae","#111"],gray:["Gray","#8a8f8c","#111"],clear:["Clear","#dfe8ee","#111"]};
 const DICE0={c:["black","white","blue"],d:[1,2]};
 const diceCfg=s=>(s&&s.dice)||DICE0;
+// Change the #CODE in the address bar without adding a history entry (so Back isn't hijacked).
+function setHash(c){ try{ history.replaceState(history.state,"",location.pathname+location.search+(c?"#"+c:"")); }catch(_){ location.hash=c; } }
 const ST=k=>k==="PUNT"||k==="FG"||k==="SPIKE"||k==="KNEEL";
 const NOROLL=k=>k==="SPIKE"||k==="KNEEL";
 // What is the game waiting on? [{team, kind:'call'|'roll'|'pat'|'toss'|'start', side:'off'|'def'}]
@@ -151,7 +153,7 @@ if(!myId){ myId="p"+Math.random().toString(36).slice(2,10); try{localStorage.set
 let S=null;          // current state as this device knows it
 let mode="none";     // none | host | client | local
 let net={status:"",peer:null,conns:[],hostConn:null,code:null,db:null,via:null};
-let ui={view:null,sel:null,manual:false,md:{},confirm:null,tv:false,err:""};
+let ui={view:null,sel:null,manual:(()=>{ try{ return localStorage.getItem("tb.manual")!=="0"; }catch(e){ return true; } })(),md:{},confirm:null,tv:false,err:""};
 const hasClaude=()=>!!(window.claude&&typeof window.claude.use==="function");
 function saveHost(){ try{ localStorage.setItem(LKEY,JSON.stringify(S)); }catch(e){} }
 function loadHost(){ try{ const j=localStorage.getItem(LKEY); return j?JSON.parse(j):null; }catch(e){ return null; } }
@@ -185,7 +187,7 @@ function hostPeer(code,resume){
   if(!PeerCls()){ net.status="Live sync library didn't load. Playing on this device only."; mode="local"; render(); return; }
   net.via="peer"; mode="host"; net.code=code;
   if(!resume||!S||S.code!==code){ S=freshState(code); }
-  S.host=myId; saveHost(); location.hash=code;
+  S.host=myId; saveHost(); setHash(code);
   net.status="Opening your game…"; render();
   const peer=new (PeerCls())(PFX+code,peerOpts()); net.peer=peer;
   peer.on("open",()=>{ net.status="Live. Share the link or code."; net.live=true; render(); });
@@ -203,7 +205,7 @@ function hostPeer(code,resume){
 }
 function joinPeer(code){
   if(!PeerCls()){ ui.err="Live sync library didn't load on this phone. Try reloading."; render(); return; }
-  net.via="peer"; mode="client"; net.code=code; location.hash=code;
+  net.via="peer"; mode="client"; net.code=code; setHash(code);
   net.status="Connecting to game "+code+"…"; render();
   const peer=net.peer||new (PeerCls())(undefined,peerOpts()); net.peer=peer;
   const go=()=>{

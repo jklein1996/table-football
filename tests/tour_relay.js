@@ -2,7 +2,7 @@ const {chromium}=require('playwright');
 const OUT='tourr/'; let n=0; const names=[];
 (async()=>{
   const b=await chromium.launch();
-  const mk=async(w=390,h=844)=>{ const c=await b.newContext({viewport:{width:w,height:h},deviceScaleFactor:2}); await c.addInitScript(()=>{window.TB_RELAY='ws://127.0.0.1:8787';}); const p=await c.newPage(); p.on('pageerror',e=>console.log('PAGEERR',e.message)); return p; };
+  const mk=async(w=390,h=844)=>{ const c=await b.newContext({viewport:{width:w,height:h},deviceScaleFactor:2}); await c.addInitScript(()=>{window.TB_RELAY='ws://127.0.0.1:8787';}); await c.addInitScript(()=>{try{localStorage.setItem('tb.manual','0')}catch(e){}}); const p=await c.newPage(); p.on('pageerror',e=>console.log('PAGEERR',e.message)); return p; };
   const shot=async(p,label,full)=>{ n++; await p.addStyleTag({content:'.tabbar{position:static!important} body{padding-bottom:0!important} .fx{display:none}'}).catch(()=>{}); const f=`${String(n).padStart(2,'0')}-${label}.png`; await p.waitForTimeout(250); await p.screenshot({path:OUT+f,fullPage:!!full}); names.push(f); };
   const host=await mk(), amy=await mk();
   await host.goto('http://127.0.0.1:8080/'); await shot(host,'home',true);
@@ -22,12 +22,12 @@ const OUT='tourr/'; let n=0; const names=[];
       const turn=p.locator('.panel.turn:visible').first(); if(!(await turn.count())) continue;
       const h=await turn.locator('h2').innerText();
       if(/kickoff/.test(h)&&!got['kick-roll']){ got['kick-roll']=1; await p.evaluate(()=>window.scrollTo(0,0)); await shot(p,'field-kickoff-roll',true); }
-      if(/Your call: .* offense/.test(h)){ const pl=turn.locator('button.play:not([disabled])'); const k=await pl.count(); await pl.nth(Math.floor(Math.random()*Math.min(k,9))).click(); if(!got['off-call']){ got['off-call']=1; await shot(p,'field-offense-call',true);} await turn.locator('button.btn.primary').click(); }
+      if(/Your call: .* offense/.test(h)){ const pl=turn.locator('[data-act=pick]:not([disabled])'); const k=await pl.count(); await pl.nth(Math.floor(Math.random()*Math.min(k,9))).click(); if(!got['off-call']){ got['off-call']=1; await shot(p,'field-offense-call',true);} await turn.locator('button.btn.primary').click(); }
       else if(/Your call: .* defense/.test(h)){ const pl=turn.locator('button.play'); await pl.nth(Math.floor(Math.random()*6)).click(); if(!got['def-call']){ got['def-call']=1; await shot(p,'field-defense-call',true);} await turn.locator('button.btn.primary').click(); }
       else if(/Your call: the try/.test(h)){ await turn.locator('button.btn.primary').click(); }
       else if(/Your roll/.test(h)){
         if(/quarterback trapped/.test(h)&&!got['qt-roll']){ got['qt-roll']=1; await p.evaluate(()=>window.scrollTo(0,0)); await shot(p,'field-qt-followup-roll',true); }
-        if(/offense$/.test(h)&&!got['roll']){ got['roll']=1; await shot(p,'field-roll'); await p.check('#manualdice'); await shot(p,'field-roll-real-dice',true); await p.uncheck('#manualdice'); }
+        if(/offense$/.test(h)&&!got['roll']){ got['roll']=1; await shot(p,'field-roll'); await p.click('button[data-act=dicemode][data-k="1"]'); await shot(p,'field-roll-real-dice',true); await p.click('button[data-act=dicemode][data-k="0"]'); }
         await turn.locator('button.btn.primary').first().click(); }
       await p.waitForTimeout(120);
       const l=await p.evaluate(()=>window.__tb.S&&window.__tb.S.last);

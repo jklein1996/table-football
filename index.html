@@ -305,6 +305,30 @@ table.vs{font-size:11px} table.vs th,table.vs td{padding:4px 2px} table.vs thead
 .zoomwrap .pd{max-height:72vh}
 .seg.wrap4{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .pd td.pr{min-width:22px}
+/* Symmetrical buttons: every segmented row is equal-width columns, equal height */
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;align-items:stretch}
+.seg button{min-width:0;justify-content:center;text-align:center}
+.seg.g3{grid-auto-flow:row;grid-template-columns:repeat(3,1fr)}
+.seg.wrap4{grid-auto-flow:row;grid-template-columns:1fr 1fr}
+.plays.sym{grid-template-columns:1fr 1fr;grid-auto-rows:1fr}
+.plays{grid-auto-rows:1fr}
+/* Pick-a-play chart on the call card */
+.pd.pick td{cursor:pointer}
+.pd.pick th button.colpick{all:unset;cursor:pointer;display:block;width:100%;min-height:34px;padding:4px 2px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--chalk);font:700 11px/1.15 var(--body);text-align:center;white-space:normal;box-sizing:border-box}
+.pd.pick th button.colpick.on{background:var(--kcgold);color:#1a1300;border-color:var(--kcgold)}
+.pd.pick th button.colpick:focus-visible{outline:3px solid var(--kcgold)}
+.pd.pick td.selc{box-shadow:inset 0 0 0 2px var(--kcgold)}
+.pd.pick thead th{min-width:58px}
+/* Result lookup boxes size to their text (RETURN, LOST +30, INT 14 never cut off) */
+.lookup .mini,.lk .mini{width:auto;height:auto;min-width:34px;white-space:nowrap;flex:none}
+.lk{display:inline-flex;align-items:center;flex-wrap:wrap;gap:4px}
+.glen{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center}
+.glen select{width:100%}
+/* iOS: no zoom-on-focus, no tap flash, safe areas */
+input,select,textarea{font-size:16px}
+button,a,[data-act]{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html{-webkit-text-size-adjust:100%}
+select.btn,input.inp{font-size:16px}
 
 </style>
 </head>
@@ -313,8 +337,8 @@ table.vs{font-size:11px} table.vs th,table.vs td{padding:4px 2px} table.vs thead
 <canvas class="confetti" id="confetti" hidden></canvas>
 <script src="js/peerjs.min.js"></script>
 <script src="js/qrcode.js"></script>
-<script src="js/relay-url.js?v=11"></script>
-<script src="js/relay.js?v=11"></script>
-<script src="js/game.js?v=11"></script>
+<script src="js/relay-url.js?v=13"></script>
+<script src="js/relay.js?v=13"></script>
+<script src="js/game.js?v=13"></script>
 </body>
 </html>

@@ -1,0 +1,16 @@
+const {chromium}=require('playwright');
+(async()=>{ const b=await chromium.launch();
+ const mk=async()=>{ const c=await b.newContext({viewport:{width:390,height:844}}); await c.addInitScript(()=>{window.TB_RELAY='ws://127.0.0.1:8787';}); await c.addInitScript(()=>{try{localStorage.setItem('tb.manual','0')}catch(e){}}); const p=await c.newPage(); p.on('pageerror',e=>console.log('PAGEERR',e.message)); return p; };
+ const host=await mk(), amy=await mk();
+ await host.goto('http://127.0.0.1:8080/'); await host.click('button[data-act=host]'); await host.waitForSelector('.sync.on',{timeout:15000});
+ const code=(await host.evaluate(()=>location.hash)).slice(1);
+ await host.fill('#pname','Joe'); await host.click('button:has-text("Join Chiefs")');
+ await amy.goto('http://127.0.0.1:8080/#'+code); await amy.click('text=Join as a player'); await amy.waitForSelector('#pname',{timeout:15000});
+ await amy.fill('#pname','Amy'); await amy.click('button:has-text("Join Eagles")'); await amy.waitForTimeout(600);
+ await amy.reload(); await amy.waitForSelector('.sync.on',{timeout:15000}); await amy.waitForTimeout(500);
+ console.log('after reload chip:', await amy.locator('.topbar .chip').first().innerText());
+ await amy.goBack(); await amy.waitForTimeout(500);
+ console.log('after back: modal', await amy.locator('#cfh').count(), 'in game', await amy.locator('.sync.on').count());
+ await amy.click('text=No, go back'); await amy.waitForTimeout(200);
+ await amy.click('button:has-text("Leave game")'); await amy.waitForTimeout(200); console.log('leave modal', await amy.locator('#cfh').innerText());
+ await b.close(); })();

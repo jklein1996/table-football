@@ -70,6 +70,8 @@ Rule from the person: after a test fails, re-run only the failing one while fixi
   - **If the desktop restarts or cloudflared restarts, the tunnel URL changes.** Restart `node server.js` and cloudflared, read the new URL from `tunnel.log`, put it in `js/relay-url.js`, bump `?v=`, push.
 - **The desktop is only the host, not a player.** It opens `?host=TURK&admin=Joe`: it hosts game code TURK, and when Joe's phone joins with the name "Joe" it becomes the admin automatically (`autoAdmin`). The 👑 button on a roster row also hands admin to any player.
 - A computer that only hosts behaves like a TV screen once admin is handed off: no team, no playbook.
+- **Reloads never drop you:** a player's or TV's phone remembers its game (`tb.in` in localStorage) and rejoins automatically on reload, keeping its team.
+- **Back button and Leave game ask "Leave the game?" first.** The `#CODE` in the address bar is changed with `history.replaceState`, so it doesn't add history entries.
 - Backups: "Resume game" after a reload (state is saved every play), "Take over hosting" on any phone after 20 s without the host, "Play on this device" for a single pass-around phone.
 
 ## Screens and flow
@@ -92,7 +94,7 @@ Home (join with code / start a new game / play on one device) → Lobby (Invite 
   - Die 3 (ones): 1–2 = 0, then face − 2 (0–4).
   - Defense first die: 1–3 = 1, 4–5 = 2, 6 = 3. Defense second die: 1–4 = 0, 5 = 1, 6 = 2.
 - Real Paydirt's defense rolls 2 dice (red + green). With Joe's set, the defense can roll all 3, and only the two chosen dice count.
-- The app can roll for you, or "I'm rolling real dice" lets you tap the faces.
+- **Your own dice are always the default** (Joe: "Don't ever roll for us unless we select that"). Every roll card opens on "Our own dice": tap the faces you rolled. "App rolls for us" is the second option, and the choice is remembered on that phone.
 
 ### Calls and turns
 - Offense picks: one of the 9 Paydirt plays (Line Plunge, Off Tackle, End Run, Draw, Screen, Short Pass, Medium Pass, Long Pass, Sideline Pass), or **QB Sneak**, **Hail Mary**, Punt (normal or **coffin corner**), Field Goal, Spike, Kneel. It also picks a tempo (Normal 30 s, Hurry-up 10 s, Run the clock 40 s) and a **sideline call** (normal, get out of bounds, stay in bounds).
@@ -158,8 +160,10 @@ Home (join with code / start a new game / play on one device) → Lobby (Invite 
 ## Playbook
 
 - The classic Paydirt sheet, split into tabs so it fits a phone: **Running** (LP, OT, ER, DR, QS), **Passing** (SC, SP, MP, LG, SL, HM), **QB trapped & Breakaway**, **Special teams**. It has zoom buttons and scrolls both ways (rolls column stays put). Default zoom is 85% on phones.
-- "One play at a time" shows a single column as a 10–39 grid plus that play's odds against each defense.
+- The chart is always the view (Joe: "Showing the chart shouldn't be an option"). There is no separate one-play view.
 - Defense chart: pick a formation; play rows × defense rolls 1–5, then a table of what the offense gets against it.
+- **The offense call card is the chart too**: Running / Passing tabs, tap a play's name or any box in its column to pick it, then Lock in. Punt, Field Goal, Spike and Kneel are equal-size buttons below. The defense call card has six equal-size formation buttons plus the chosen formation's chart.
+- All segmented buttons are equal width and height (Joe asked for symmetrical buttons).
 - **Players see only their own team, and only the side they're on**: offense sheet when they have the ball, defense when they don't (Joe's request). In one-device mode everything is visible.
 
 ## Decisions log (in order)
@@ -179,6 +183,8 @@ Home (join with code / start a new game / play on one device) → Lobby (Invite 
 13. Your dice: 3 dice, 3 colors, same dice for both sides, set by the admin.
 14. Playbook as the classic sheet split into Running / Passing / QB trapped & Breakaway / Special teams, with zoom.
 15. TV / cast screen never picks a team or shows a playbook; it shows the field, results and animations.
+17. Own dice by default on every roll; iPhone sweep (375 and 430 wide): result boxes like RETURN no longer cut off, 16px form fields so iOS doesn't zoom, tidier game-length settings. `tests/sweep.js` checks every screen for overflow and cut-off buttons.
+16. The chart is always shown; plays are picked straight from the chart on the call card; symmetrical buttons; reloads rejoin automatically; Back and Leave game confirm first.
 
 ## Known gaps / ideas not done
 
