@@ -545,7 +545,7 @@ function diceHTML(d,showDef){
 function resultBanner(){
   const l=S.last; if(!l) return `<div class="result"><div class="big">Super Bowl LVII, replayed with dice</div></div>`;
   const showDef = l.D!=null && l.dice && l.dice.d1;
-  return `<div class="result ${l.cls||""}" aria-live="polite">${l.dice&&l.dice.t?diceHTML(l.dice,showDef):""}<div class="big">${esc(l.txt)}</div>${l.R?`<div class="tag">Off ${l.R}${showDef?` · Def ${l.D}`:""}</div>`:""}</div>`;
+  return `<div class="result ${l.cls||""}" aria-live="polite">${l.dice&&l.dice.t?diceHTML(l.dice,showDef):""}<div class="big">${esc(l.txt)}</div>${l.R?`<div class="tag">Off ${l.R}${showDef?` · Def ${l.D}`:""}</div>`:""}${lookupLine(l)}</div>`;
 }
 function nm(p){ return p?esc(p.name):"the admin"; }
 // Text describing who the game is waiting on
@@ -646,28 +646,61 @@ function settingsBox(){
 }
 
 // ---------- Playbook / rules ----------
-function chartTable(team){
-  const cols=[[10,12],[13,16],[17,19],[20,23],[24,26],[27,29],[30,33],[34,36],[37,40]];
-  const lab=c=>`${c[0]}–${c[1]}`;
-  const sum=(pk,c)=>{ const vals=[]; for(let R=c[0];R<=c[1];R++){ const x=cell(team,pk,R); vals.push(x.k==="yds"?(x.brk?"BIG":x.y):x.k==="inc"?"inc":x.k==="pen"?(x.y>0?"+15P":"−10P"):x.k.toUpperCase()); }
-    const nums=vals.filter(v=>typeof v==="number"); const others=[...new Set(vals.filter(v=>typeof v!=="number"))];
-    let t=nums.length?(Math.min(...nums)===Math.max(...nums)?`${Math.min(...nums)}`:`${Math.min(...nums)} to ${Math.max(...nums)}`):"";
-    if(others.length) t+=(t?", ":"")+others.join(", ");
-    const cls=others.includes("INT")||others.includes("FUM")?"cell-to":others.includes("BIG")?"cell-td":nums.length===0?"cell-inc":"";
-    return `<td class="${cls}">${t}</td>`; };
-  return `<div class="tbl"><table><thead><tr><th>Play</th>${cols.map(c=>`<th>${lab(c)}</th>`).join("")}</tr></thead><tbody>${OFF_ORDER.map(pk=>`<tr><td><b>${PLAYS[pk].name}</b>${RATE[team][pk]>0?" ★":""}</td>${cols.map(c=>sum(pk,c)).join("")}</tr>`).join("")}</tbody></table></div>`;
+// ---------- Paydirt-style charts ----------
+// One box on the offense chart: what the team's chart says for this play and roll.
+function offBox(team,pk,R){
+  const x=cell(team,pk,R); const p=PLAYS[pk];
+  if(x.k==="pen") return x.y>0?{c:"red",t:"PI",s:"+15 1st"}:{c:"red",t:"PEN",s:"−10"};
+  if(x.k==="int") return {c:"red",t:"INT"};
+  if(x.k==="fum") return {c:"red",t:"FUM"};
+  if(x.k==="inc") return {c:"inc",t:"inc"};
+  const ob = x.y>0 && (pk==="SL" || ((pk==="RO"||pk==="SP"||pk==="SC") && (R%10)%2===1));
+  return {c:x.brk?"brk":"blk",t:(x.y>0?"+":x.y<0?"−":"")+Math.abs(x.y),s:x.brk?"BREAK":"",ob};
 }
-function matchupTable(){
-  return `<div class="tbl"><table><thead><tr><th>Play \\ Defense</th>${DEF_ORDER.map(d=>`<th>${DEFS[d].name}</th>`).join("")}</tr></thead><tbody>${OFF_ORDER.map(p=>`<tr><td><b>${PLAYS[p].name}</b></td>${DEF_ORDER.map(d=>{const m=GRID[p][d];return `<td class="${m>0?"good":m<0?"bad":""}">${m>0?"+":""}${m*(p==="QB"?1:2)}</td>`;}).join("")}</tr>`).join("")}</tbody></table></div><p class="small muted">Yards added (+) or taken away (−) when that defense meets that play. Blitz vs any pass: defense roll of 10+ is a sack.</p>`;
+function boxHTML(b,hi){ return `<td class="bx ${b.c}${hi?" hi":""}"><b>${b.t}</b>${b.s?`<i>${b.s}</i>`:""}${b.ob?`<u>OB</u>`:""}</td>`; }
+function offChart(team,hl){
+  const rows=[]; for(let R=10;R<=40;R++) rows.push(R);
+  return `<div class="pd"><table><thead><tr><th class="rk">Roll</th>${OFF_ORDER.map(pk=>`<th class="${hl&&hl.pk===pk?"hc":""}">${PLAYS[pk].name}${RATE[team][pk]>0?" ★":""}</th>`).join("")}</tr></thead><tbody>
+  ${rows.map(R=>`<tr class="${R%10===0?"dec":""}${hl&&hl.R===R?" hr":""}"><th class="rk">${R}</th>${OFF_ORDER.map(pk=>boxHTML(offBox(team,pk,R),hl&&hl.R===R&&hl.pk===pk)).join("")}</tr>`).join("")}
+  </tbody></table></div>`;
+}
+// One box on the defense chart: what this defense roll does to this play.
+function defBox(pk,dk,D){
+  const p=PLAYS[pk]; const M=GRID[pk][dk]; const mult=p.cat==="sneak"?1:2;
+  if(D>=12) return M<0?{c:"red",t:p.cat==="pass"?"INT":"FUM",s:"takeaway"}:{c:"red",t:p.cat==="pass"?"SACK":"STUFF",s:p.cat==="pass"?"−7":"−3"};
+  if(dk==="BL"&&p.cat==="pass"&&D>=10) return {c:"red",t:"SACK",s:"−7"};
+  const v=M*mult+defAdj(D);
+  return {c:v>0?"plus":"blk",t:(v>0?"+":v<0?"−":"")+Math.abs(v),s:D===2?"min +5":""};
+}
+function defChart(dk,hl,team){
+  const Ds=[2,3,4,5,6,7,8,9,10,11,12];
+  return `<div class="pd dc"><table><thead><tr><th class="rk">Play</th>${Ds.map(D=>`<th class="${hl&&hl.D===D?"hc":""}">${D}</th>`).join("")}</tr></thead><tbody>
+  ${OFF_ORDER.map(pk=>`<tr class="${hl&&hl.pk===pk?"hr":""}"><th class="rk">${PLAYS[pk].name}</th>${Ds.map(D=>boxHTML(defBox(pk,dk,D),hl&&hl.pk===pk&&hl.D===D)).join("")}</tr>`).join("")}
+  </tbody></table></div>`;
+}
+// How the last play was looked up, step by step.
+function lookupLine(l){
+  if(!l||!l.pk||!PLAYS[l.pk]||!l.dk||l.R==null) return "";
+  const ob=offBox(l.team,l.pk,l.R); const db=defBox(l.pk,l.dk,l.D);
+  return `<div class="lookup"><span class="lk"><span class="mini ${ob.c}">${ob.t}</span>${TEAMS[l.team].short} chart, ${esc(PLAYS[l.pk].name)}, roll ${l.R}</span>${ob.c==="red"&&ob.t!=="FUM"&&ob.t!=="INT"?"":`<span class="lk"><span class="mini ${db.c}">${db.t}</span>${esc(DEFS[l.dk].name)}, defense roll ${l.D}</span>`}<button class="btn ghost sm" data-act="lookup">Show on the charts</button></div>`;
 }
 function playbookView(){
-  const m=me(); const team=ui.pbTeam||(m?m.team:"KC");
-  return `<div class="seg wide">${["KC","PHI"].map(t=>`<button class="${team===t?"on":""}" data-act="pb" data-t="${t}">${TEAMS[t].name}</button>`).join("")}</div>
-   <div class="panel ${TEAMS[team].cls}"><h2>${TEAMS[team].name} offense chart</h2><div class="small muted">${esc(TEAMS[team].blurb)}</div>${chartTable(team)}<div class="small muted">Find your offense roll (10–40) across the top. Numbers are yards before the defense adjusts. inc = incomplete, P = penalty, BIG = breakaway, INT/FUM = turnover. ★ = team strength.</div></div>
-   <div class="panel"><h2>Offense vs defense</h2>${matchupTable()}</div>
-   <div class="panel"><h2>Defense roll (2 dice)</h2><div class="tbl"><table><thead><tr><th>Defense total</th><th>Effect</th></tr></thead><tbody>
-    <tr><td>2</td><td>Offside: offense gets at least 5 yards</td></tr><tr><td>3–4</td><td>+2 yards for offense</td></tr><tr><td>5–6</td><td>+1</td></tr><tr><td>7–8</td><td>No change</td></tr><tr><td>9–10</td><td>−1</td></tr><tr><td>11</td><td>−2</td></tr><tr><td>12</td><td>Big defensive play. If the defense guessed right: turnover. Otherwise: sack (−7) or stuff (−3)</td></tr></tbody></table></div>
-    <div class="small muted">Chiefs ★ Run Stuff and Eagles ★ Blitz add 1 to the defense roll.</div></div>`;
+  const m=me(); const team=ui.pbTeam||(m?m.team:"KC"); const def=other(team);
+  const dk=ui.pbDef||"BA"; const l=S&&S.last;
+  const hlO=ui.pbHL&&l&&l.team===team&&l.pk&&PLAYS[l.pk]?{R:l.R,pk:l.pk}:null;
+  const hlD=ui.pbHL&&l&&l.team===team&&l.dk===dk&&PLAYS[l.pk]?{D:l.D,pk:l.pk}:null;
+  return `<div class="seg wide">${["KC","PHI"].map(t=>`<button class="${team===t?"on":""}" data-act="pb" data-t="${t}">${TEAMS[t].name} on offense</button>`).join("")}</div>
+   ${ui.pbHL&&l&&l.pk?`<div class="panel slim">${lookupLine(l).replace(/<button[^>]*>.*?<\/button>/,`<button class="btn ghost sm" data-act="pbclear">Clear highlight</button>`)}</div>`:""}
+   <div class="panel ${TEAMS[team].cls}"><h2>1 · ${TEAMS[team].name} offense chart</h2>
+    <div class="small">Find the offense roll (10–40) down the left and the play called across the top. That box is the base result.</div>
+    ${offChart(team,hlO)}
+    <div class="legend small"><span><span class="mini blk">+6</span> yards</span><span><span class="mini red">INT</span> turnover or penalty</span><span><span class="mini brk">+45</span> breakaway</span><span><span class="mini inc">inc</span> incomplete</span><span><u>OB</u> out of bounds, clock stops</span><span>★ team strength</span></div></div>
+   <div class="panel"><h2>2 · ${TEAMS[def].name} defense chart</h2>
+    <div class="seg">${DEF_ORDER.map(d=>`<button class="${dk===d?"on":""}" data-act="pbdef" data-d="${d}">${DEFS[d].name}</button>`).join("")}</div>
+    <div class="small">Pick the defense called, then find the play down the left and the defense roll (2–12) across the top. Add that box to the offense box.${DEFRATE[def][dk]?` ${TEAMS[def].name} ★ ${DEFS[dk].name}: add 1 to the defense roll.`:""}</div>
+    ${defChart(dk,hlD,team)}
+    <div class="legend small"><span><span class="mini plus">+2</span> offense gains</span><span><span class="mini blk">−3</span> offense loses</span><span><span class="mini red">SACK</span> replaces the offense box</span><span>min +5 = offside, offense gets at least 5</span></div>
+    <div class="small muted">Red boxes on the offense chart (penalties, INT, FUM) stand on their own: skip the defense chart. An inc stays incomplete unless a Blitz sack box comes up. A breakaway never gains less than its offense box.</div></div>`;
 }
 function rulesView(){
   const s=S;
@@ -794,6 +827,9 @@ app.addEventListener("click",e=>{
   if(A==="face"){ ui.md[b.dataset.k]=+b.dataset.v; render(); return; }
   if(A==="tab"){ ui.tab=b.dataset.t; window.scrollTo(0,0); render(); return; }
   if(A==="pb"){ ui.pbTeam=b.dataset.t; render(); return; }
+  if(A==="pbdef"){ ui.pbDef=b.dataset.d; render(); return; }
+  if(A==="pbclear"){ ui.pbHL=false; render(); return; }
+  if(A==="lookup"){ const l=S&&S.last; if(l&&l.team){ ui.pbTeam=l.team; ui.pbDef=l.dk||"BA"; ui.pbHL=true; } ui.tab="book"; window.scrollTo(0,0); render(); setTimeout(()=>{ const h=document.querySelector(".pd td.hi"); if(h) h.scrollIntoView({block:"center",inline:"center"}); },50); return; }
   if(A==="join"){ const n=(document.getElementById("pname")||{}).value||""; if(!n.trim()){ ui.err="Type your name first."; render(); return; } localSet("tb.name",n.trim()); ui.name=null; ui.spectator=false; act({type:"join",name:n.trim(),team:b.dataset.team}); return; }
   if(A==="confirm"){ ui.confirm={what:b.dataset.what,team:b.dataset.team,pid:b.dataset.pid}; render(); return; }
   if(A==="confirmno"){ ui.confirm=null; render(); return; }
