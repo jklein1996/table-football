@@ -1070,7 +1070,14 @@ function shareURL(){ const base=location.href.split("#")[0]; return net.via==="d
 function shareBox(){
   if(net.via==="db") return `<div class="share"><div><div class="tag">Share this page's link</div></div></div>`;
   const url=shareURL();
-  return `<div class="share"><div class="qr" id="qr" aria-label="QR code to join"></div><div style="min-width:0"><div class="tag">Game code</div><div class="code">${esc(S.code)}</div><div class="small url">${esc(url)}</div><div class="row"><button class="btn small" data-act="copy">Copy link</button><button class="btn small" data-act="tvopen">Open TV view</button><a class="btn small" href="card.html#${esc(S.code)}" target="_blank" rel="noopener">Quick card</a></div></div></div>`;
+  return `<div class="share"><div><div class="qr" id="qr" role="button" tabindex="0" data-act="qrbig" aria-label="QR code to join. Tap to make it bigger"></div><div class="qrhint">Tap to enlarge</div></div><div style="min-width:0"><div class="tag">Game code</div><div class="code">${esc(S.code)}</div><div class="small url">${esc(url)}</div><div class="row"><button class="btn small" data-act="copy">Copy link</button><button class="btn small" data-act="tvopen">Open TV view</button><a class="btn small" href="card.html#${esc(S.code)}" target="_blank" rel="noopener">Quick card</a></div></div></div>`;
+}
+function showBigQR(){
+  if(!window.qrcode||!S) return; const ov=document.createElement("div"); ov.className="qrbig"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-label","Big QR code");
+  let svg=""; try{ const q=window.qrcode(0,"M"); q.addData(shareURL()); q.make(); svg=q.createSvgTag({cellSize:8,margin:2,scalable:true}); }catch(e){}
+  ov.innerHTML=`<div class="big">${svg}</div><div class="c">${esc(S.code||"")}</div><div class="h">Scan to join · tap anywhere to close</div>`;
+  const close=()=>{ ov.remove(); document.removeEventListener("keydown",esc1); }; const esc1=e=>{ if(e.key==="Escape") close(); };
+  ov.addEventListener("click",close); document.addEventListener("keydown",esc1); document.body.appendChild(ov);
 }
 function drawQR(){
   const el=document.getElementById("qr"); if(!el||!window.qrcode) return;
@@ -1148,6 +1155,7 @@ function localSet(k,v){ try{localStorage.setItem(k,v);}catch(e){} }
 app.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]"); if(!b||b.disabled) return;
   const A=b.dataset.act;
+  if(A==="qrbig"){ showBigQR(); return; }
   if(A==="send"){ let a; try{a=JSON.parse(b.dataset.a);}catch(_){return;} if(a.type==="call"&&!a.play) return; if(a.type==="call"||a.type==="roll"){ ui.sel=null; ui.md={}; ui.onside=false; } if(a.type==="call") ui.tempo="normal"; act(a); return; }
   if(A==="pick"){ ui.sel={key:b.dataset.key,play:b.dataset.play}; render(); return; }
   if(A==="tempo"){ ui.tempo=b.dataset.k; render(); return; }

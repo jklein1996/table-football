@@ -261,6 +261,16 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center;
 .mini.blk{background:#9ccc3c;color:#0d1a05;border:1px solid #6f9a1f}.mini.wht{background:#f4f4f0;color:#111}
 .mini.inc{background:#000;color:#8a8f8b;border:1px solid #333}.mini.brk{background:#9ccc3c;color:#0d1a05;border:1px solid #0d1a05}
 
+/* Join QR: room around it, tap to enlarge */
+.share{gap:18px;margin:16px 0 4px}
+.share .qr{cursor:zoom-in;box-shadow:0 0 0 4px #ffffff14}
+.share .qr:focus-visible{outline:3px solid var(--kcgold);outline-offset:3px}
+.share .code{margin:2px 0 6px}.share .url{margin-bottom:10px}
+.qrhint{font-size:12px;color:var(--dim);margin-top:6px;text-align:center;width:150px}
+.qrbig{position:fixed;inset:0;z-index:200;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;cursor:zoom-out}
+.qrbig .big{width:min(88vw,70vh);height:min(88vw,70vh)}.qrbig .big svg{width:100%;height:100%;display:block}
+.qrbig .c{font:700 44px/1 var(--mono);letter-spacing:.25em;color:#111}.qrbig .h{font:600 16px var(--body);color:#555}
+
 </style>
 </head>
 <body>
