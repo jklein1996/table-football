@@ -678,13 +678,14 @@ function maybeCelebrate(beforeSeq){ if(S&&S.seq!==beforeSeq&&S.last) celebrate(S
 // --- PeerJS
 const PFX="turkeybowl57-";
 const peerOpts=()=>Object.assign({debug:0},window.TB_PEER||{});
+const PeerCls=()=>window.TB_RELAY&&window.RelayPeer?window.RelayPeer:window.Peer;
 function hostPeer(code,resume){
-  if(!window.Peer){ net.status="Live sync library didn't load. Playing on this device only."; mode="local"; render(); return; }
+  if(!PeerCls()){ net.status="Live sync library didn't load. Playing on this device only."; mode="local"; render(); return; }
   net.via="peer"; mode="host"; net.code=code;
   if(!resume||!S||S.code!==code){ S=freshState(code); }
   S.host=myId; saveHost(); location.hash=code;
   net.status="Opening your game…"; render();
-  const peer=new Peer(PFX+code,peerOpts()); net.peer=peer;
+  const peer=new (PeerCls())(PFX+code,peerOpts()); net.peer=peer;
   peer.on("open",()=>{ net.status="Live. Share the link or code."; net.live=true; render(); });
   peer.on("connection",conn=>{
     conn._pending=true; net.conns.push(conn);
@@ -699,10 +700,10 @@ function hostPeer(code,resume){
   });
 }
 function joinPeer(code){
-  if(!window.Peer){ ui.err="Live sync library didn't load on this phone. Try reloading."; render(); return; }
+  if(!PeerCls()){ ui.err="Live sync library didn't load on this phone. Try reloading."; render(); return; }
   net.via="peer"; mode="client"; net.code=code; location.hash=code;
   net.status="Connecting to game "+code+"…"; render();
-  const peer=net.peer||new Peer(undefined,peerOpts()); net.peer=peer;
+  const peer=net.peer||new (PeerCls())(undefined,peerOpts()); net.peer=peer;
   const go=()=>{
     const conn=peer.connect(PFX+code,{reliable:true}); net.hostConn=conn;
     const t=setTimeout(()=>{ if(!conn.open){ net.status="Still trying to reach the admin's phone. Make sure it has the game open."; render(); } },8000);
