@@ -942,7 +942,7 @@ function joinBox(){
     <div class="small muted">Turns rotate in the order players joined. The admin can reorder.</div></div>`;
 }
 function lobbyPanel(){
-  return `${joinBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>${isAdmin()?settingsBox()+`<button class="btn primary big" data-act="send" data-a='{"type":"start"}'>Start the game</button>`:`<div class="wait">Waiting for the admin to start.</div>`}`;
+  return `${isAdmin()&&mode!=="local"?`<div class="panel"><h2>Invite players</h2><div class="small muted">Show this screen around. Everyone scans the QR, taps Join as a player, and picks a team. They wait here until you start.</div>${shareBox()}</div>`:""}${joinBox()}<div class="grid2">${rosterCol("KC")}${rosterCol("PHI")}</div>${isAdmin()?settingsBox()+`<button class="btn primary big" data-act="send" data-a='{"type":"start"}'>Start the game</button>`:`<div class="wait">Waiting for the admin to start.</div>`}`;
 }
 function settingsBox(){
   const s=S; const locked=!(s.phase==="lobby"||s.phase==="toss");
