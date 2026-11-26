@@ -270,6 +270,21 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center;
 .qrbig{position:fixed;inset:0;z-index:200;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;cursor:zoom-out}
 .qrbig .big{width:min(88vw,70vh);height:min(88vw,70vh)}.qrbig .big svg{width:100%;height:100%;display:block}
 .qrbig .c{font:700 44px/1 var(--mono);letter-spacing:.25em;color:#111}.qrbig .h{font:600 16px var(--body);color:#555}
+/* Odds shown before and after each roll */
+.play .s.st{color:#e8efe4;font-family:var(--mono);font-size:10.5px;line-height:1.35}
+.panel.preview h2{font-size:20px}
+.rg{display:grid;gap:3px;margin:6px 0 10px}
+.rgr{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
+.rgr.d5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.rgc{border-radius:5px;padding:2px 1px 3px;text-align:center;min-width:0;display:flex;flex-direction:column;align-items:center;line-height:1.1;border:1px solid transparent}
+.rgc i{font:600 9px var(--mono);opacity:.75;font-style:normal}
+.rgc b{font:700 10.5px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rgc small{font:500 8.5px var(--mono);opacity:.8}
+.rgc.blk{background:#9ccc3c;color:#0d1a05}.rgc.wht{background:#f4f4f0;color:#111}.rgc.red{background:#b3001b;color:#fff}
+.rgc.yel{background:#f2c200;color:#111}.rgc.brk{background:#000;color:var(--kcgold);border-color:var(--kcgold)}.rgc.inc{background:#000;color:#cfd6d0;border-color:#444}
+.rgc.hi{outline:3px solid var(--kcgold);outline-offset:1px;z-index:1}
+.odds2{display:flex;flex-wrap:wrap;gap:4px 12px;margin:6px 0 8px;font-size:13px}
+.odds2 b{font-family:var(--mono)} .odds2 small{color:var(--dim)} .odds2 .fd{flex-basis:100%;color:var(--kcgold)}
 
 </style>
 </head>
@@ -278,8 +293,8 @@ a.btn{color:inherit;text-decoration:none;display:inline-flex;align-items:center;
 <canvas class="confetti" id="confetti" hidden></canvas>
 <script src="js/peerjs.min.js"></script>
 <script src="js/qrcode.js"></script>
-<script src="js/relay-url.js?v=8"></script>
-<script src="js/relay.js?v=8"></script>
-<script src="js/game.js?v=8"></script>
+<script src="js/relay-url.js?v=9"></script>
+<script src="js/relay.js?v=9"></script>
+<script src="js/game.js?v=9"></script>
 </body>
 </html>
