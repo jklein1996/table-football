@@ -175,11 +175,18 @@ function buildCharts(){
     const ir=bandsToRows(ROLLS.filter(R=>R!==39),[{p:30,k:"y",lo:0,hi:0},{p:35,k:"y",lo:1,hi:10},{p:25,k:"y",lo:11,hi:25},{p:10,k:"y",lo:26,hi:45}]); ir[39]={k:"td"};
     CHART[team].IR=ir;
     // Kickoff return (receiving team's starting yard line). 39 = return TD.
-    const kr=bandsToRows(ROLLS.filter(R=>R!==39),[{p:20,k:"y",lo:15,hi:24},{p:55,k:"tb",lo:25,hi:25},{p:18,k:"y",lo:26,hi:35},{p:7,k:"y",lo:36,hi:50}]); kr[39]={k:"td"};
+    // Kickoff, two rolls like the real game: the kicking team rolls its Kickoff column (touchback or a
+    // returnable kick), then the receiving team rolls its Kickoff Return column for where they start.
+    CHART[team].KO=bandsToRows(ROLLS,[{p:45,k:"kret"},{p:55,k:"tb"}]);
+    const kr=bandsToRows(ROLLS.filter(R=>R!==39),[{p:28,k:"y",lo:12,hi:20},{p:42,k:"y",lo:21,hi:28},{p:22,k:"y",lo:29,hi:38},{p:8,k:"y",lo:39,hi:55}]); kr[39]={k:"td"}; kr[10]={k:"f",y:0};
     CHART[team].KR=kr;
     // Punt (net yards). 10 = blocked. 39 = long return (net 10).
-    const pu=bandsToRows(ROLLS.filter(R=>R!==10&&R!==39),[{p:30,k:"y",lo:30,hi:36},{p:40,k:"y",lo:37,hi:42},{p:30,k:"y",lo:43,hi:52}]); pu[10]={k:"blk"}; pu[39]={k:"ret",y:10};
+    // Punt, two rolls: the punting team rolls its Punt column (how far it goes, 10 = blocked), then the
+    // receiving team rolls its Punt Return column (FC = fair catch, F = muffed/fumbled, 39 = return TD).
+    const pu=bandsToRows(ROLLS.filter(R=>R!==10),[{p:30,k:"y",lo:36,hi:43},{p:40,k:"y",lo:44,hi:48},{p:30,k:"y",lo:49,hi:58}]); pu[10]={k:"blk"};
     CHART[team].PU=pu;
+    const pr=bandsToRows(ROLLS.filter(R=>R!==10&&R!==39),[{p:36,k:"fc"},{p:30,k:"y",lo:0,hi:6},{p:22,k:"y",lo:7,hi:12},{p:12,k:"y",lo:13,hi:30}]); pr[10]={k:"f",y:0}; pr[39]={k:"td"};
+    CHART[team].PR=pr;
     // Field goal: longest kick that is good. 10 = blocked.
     const fg={}; let acc=0; const tot=216;
     ROLLS.forEach(R=>{ const q=(acc+OFFP[R]/2)/tot; acc+=OFFP[R];
@@ -190,7 +197,7 @@ function buildCharts(){
     CHART[team].FG=fg;
     // Extra point: red box = no good.
     const xp={}; ROLLS.forEach(R=>xp[R]=R<=11?{k:"ng"}:{k:"ok"}); CHART[team].XP=xp;
-    ["KR","PU","FG","IR","B"].forEach(k=>ROLLS.forEach(R=>{ const c=CHART[team][k][R]; if(c&&c.k==="y") c.plain=true; }));
+    ["KR","PU","PR","FG","IR","B"].forEach(k=>ROLLS.forEach(R=>{ const c=CHART[team][k][R]; if(c&&c.k==="y") c.plain=true; }));
   }
 }
 buildCharts();
@@ -235,7 +242,7 @@ function defBox(pk,dk,D){
 // ---------- Resolving a play (the Paydirt priority rules) ----------
 function boxTxt(c){ if(!c) return "";
   if(c.k==="y"){ if(c.td) return "(TD)"; const v=c.plain?String(c.y):(c.y>0?"+":"")+c.y; return c.paren?`(${v})`:v; }
-  return ({inc:"INC",qt:"QT",b:"B",td:"TD",tb:"TB 25",blk:"BLK",ng:"NO",ok:"GOOD",ret:"RET"})[c.k]||(c.k==="int"?`INT ${c.y}`:c.k==="f"?`F ${c.y>0?"+":""}${c.y}`:c.k==="pen"?`${c.side} ${c.yds}${c.fd?"*":""}`:c.k);
+  return ({kret:"RETURN",fc:"FC",inc:"INC",qt:"QT",b:"B",td:"TD",tb:"TB 25",blk:"BLK",ng:"NO",ok:"GOOD",ret:"RET"})[c.k]||(c.k==="int"?`INT ${c.y}`:c.k==="f"?`F ${c.y>0?"+":""}${c.y}`:c.k==="pen"?`${c.side} ${c.yds}${c.fd?"*":""}`:c.k);
 }
 function fmtGain(y){return y>0?`gain of ${y}`:y===0?"no gain":`loss of ${-y}`;}
 // Combine an offense box and a defense box. Returns {kind, y, why, follow?}
@@ -413,7 +420,22 @@ function applyFollow(s,dice){
   const f=s.follow; s.follow=null; const R=offValue(dice.t,dice.a,dice.b);
   const off=s.poss, def=other(off);
   s.last.fol={kind:f.kind,R,team:f.team,dice}; s.last.wait=false; s.last.from=f.los;
-  const head=`${TEAMS[off].short} ${PLAYS[f.pk].name}:`;
+  if(f.kind==="PR"){ const c=CHART[off].PR[R]; s.last.fol.box=c; s.last.stop=true;
+    if(c.k==="td"){ touchdown(s,off,`Punt RETURNED all the way by the ${TEAMS[off].name}!`); return; }
+    if(c.k==="f"){ s.follow={kind:"FUM",team:off,pk:"PUNT",y:0,los:s.ball}; s.last.wait=true; s.last.ev="fum"; s.last.txt=`MUFFED PUNT! The ball is loose. ${TEAMS[off].name} roll the fumble line.`; addLog(s,off,s.last.txt); return; }
+    if(c.k==="fc"){ s.last.txt=`Fair catch. ${TEAMS[off].name} ball at ${spotName(s.ball)}.`; s.last.ev="punt"; addLog(s,off,s.last.txt); return; }
+    s.ball+=dir(off)*c.y; if(toGoal(s)<=0){ touchdown(s,off,`Punt RETURNED all the way by the ${TEAMS[off].name}!`); return; }
+    s.down=1; s.toGo=Math.min(10,toGoal(s)); s.last.txt=`${c.y>=13?"Big return! ":""}Returned ${c.y} yards. ${TEAMS[off].name} ball at ${spotName(s.ball)}.`; s.last.ev="punt"; addLog(s,off,s.last.txt); return; }
+  if(f.kind==="FUM"&&(f.pk==="KO"||f.pk==="PUNT")){ s.last.fol.box={k:FUMKEEP(R)?"keep":"lost"}; const what=f.pk==="KO"?"kick return":"punt return";
+    if(FUMKEEP(R)){ s.ball=f.los; s.down=1; s.toGo=Math.min(10,toGoal(s)); s.last.ev="recover"; s.last.txt=`${TEAMS[off].name} fall on their own fumble on the ${what}! Ball at ${spotName(s.ball)}.`; addLog(s,off,s.last.txt); return; }
+    s.last.cls="to"; s.last.ev="turnover"; s.last.stop=true;
+    if(R===39){ s.poss=def; touchdown(s,def,`Fumble on the ${what}! Scooped up by the ${TEAMS[def].name} for a touchdown!`); return; }
+    s.poss=def; s.ball=f.los; s.down=1; s.toGo=Math.min(10,toGoal(s)); s.last.txt=`FUMBLE on the ${what}! ${TEAMS[def].name} recover at ${spotName(s.ball)}.`; addLog(s,off,s.last.txt); return; }
+  if(f.kind==="KR"){ const c=CHART[off].KR[R]; s.last.fol.box=c; s.last.pk="KO";
+    if(c.k==="f"){ startPossession(s,off,20); s.follow={kind:"FUM",team:off,pk:"KO",y:0,los:s.ball}; s.last.wait=true; s.last.ev="fum"; s.last.txt=`FUMBLE on the kick return! ${TEAMS[off].name} roll the fumble line.`; addLog(s,off,s.last.txt); return; }
+    if(c.k==="td"){ touchdown(s,off,`Kickoff RETURNED all the way by the ${TEAMS[off].name}!`); return; }
+    startPossession(s,off,c.y); s.last.txt=`${c.y>=39?"Big return! ":""}${TEAMS[off].name} return it to their ${c.y}.`; s.last.ev="kick"; addLog(s,off,s.last.txt); return; }
+  const head=`${TEAMS[off].short} ${PLAYS[f.pk]?PLAYS[f.pk].name:f.pk==="KO"?"kick return":"punt return"}:`;
   if(f.kind==="B"){ const c=CHART[off].B[R]; s.last.fol.box=c;
     if(c.k==="td"){ touchdown(s,off,`${head} Breakaway, nobody catches him!`); s.last.ev="td"; return; }
     s.last.ev="brk"; gainYards(s,c.y,`${head} Breakaway! Gain of ${c.y}.`); if(s.last.ev==="first") s.last.ev="brk"; return; }
@@ -443,14 +465,14 @@ function applyFollow(s,dice){
 // ---------- Kicks ----------
 function applyPunt(s,dice){
   const team=s.poss, def=other(team); const R=offValue(dice.t,dice.a,dice.b); const c=CHART[team].PU[R];
-  let txt; s.last={team,pk:"PUNT",dice,R,txt:"",cls:"",from:s.ball,o:c,ev:"punt"};
+  let txt; s.last={team,pk:"PUNT",dice,R,txt:"",cls:"",from:s.ball,o:c,ev:"punt",stop:true};
   if(c.k==="blk"){ s.ball-=dir(team)*5; s.ball=Math.max(1,Math.min(99,s.ball)); txt=`${TEAMS[team].short} punt BLOCKED! ${TEAMS[def].name} ball at ${spotName(s.ball)}.`; s.poss=def; s.down=1; s.toGo=Math.min(10,toGoal(s)); s.last.cls="to"; s.last.ev="block"; }
   else{
-    const net=c.k==="ret"?10:c.y;
-    let land=s.ball+dir(team)*net; let tb=false;
-    if((team==="KC"&&land>=100)||(team==="PHI"&&land<=0)){ tb=true; land=ownToAbs(def,20); }
-    s.poss=def; s.ball=land; s.down=1; s.toGo=Math.min(10,toGoal(s));
-    txt=`${TEAMS[team].short} punts${c.k==="ret"?", huge return!":""} ${tb?"Touchback.":`Net ${net}.`} ${TEAMS[def].name} ball at ${spotName(land)}.`;
+    let land=s.ball+dir(team)*c.y;
+    if((team==="KC"&&land>=100)||(team==="PHI"&&land<=0)){ land=ownToAbs(def,20); s.poss=def; s.ball=land; s.down=1; s.toGo=10; txt=`${TEAMS[team].short} punts ${c.y} yards into the end zone. Touchback, ${TEAMS[def].name} ball at ${spotName(land)}.`; }
+    else { s.poss=def; s.ball=land; s.down=1; s.toGo=Math.min(10,toGoal(s));
+      s.follow={kind:"PR",team:def,pk:"PUNT",los:land}; s.last.wait=true;
+      txt=`${TEAMS[team].short} punts ${c.y} yards to the ${spotName(land)}. ${TEAMS[def].name} roll the return.`; }
   }
   s.last.txt=txt; addLog(s,team,txt);
 }
@@ -477,16 +499,17 @@ function applyFG(s,dice){
 }
 const ONSIDE_OK=R=>R>=36;   // kicking team recovers on 36-39 (about 1 in 7)
 function applyKickoff(s,dice,onside){
-  const kick=s.kicker, recv=other(kick); const R=offValue(dice.t,dice.a,dice.b); const c=CHART[recv].KR[R];
+  const kick=s.kicker, recv=other(kick); const R=offValue(dice.t,dice.a,dice.b); const c=CHART[kick].KO[R];
   let own,txt; s.last={team:kick,pk:"KO",dice,R,txt:"",cls:"",o:c,ev:"kick",from:ownToAbs(kick,35)};
   if(onside){ s.freeKick=false; s.last.o={k:ONSIDE_OK(R)?"keep":"lost"};
     if(ONSIDE_OK(R)){ txt=`ONSIDE KICK RECOVERED by the ${TEAMS[kick].name}! (rolled ${R}; 36-39 recovers) Ball at their 45.`; startPossession(s,kick,45); s.last.ev="recover"; s.last.cls="td"; }
     else { txt=`Onside kick, ${TEAMS[recv].name} recover (rolled ${R}; needed 36-39). Ball at the ${TEAMS[kick].short} 45.`; startPossession(s,recv,55); s.last.ev="turnover"; }
     s.phase="play"; s.last.txt=txt; addLog(s,kick,txt); return; }
   if(s.freeKick){ own=Math.min(45,20+Math.max(0,R-10)); s.freeKick=false; txt=`Free kick after the safety. ${TEAMS[recv].name} start at their ${own}.`; }
-  else if(c.k==="td"){ s.poss=recv; s.last.txt=""; touchdown(s,recv,`Kickoff RETURNED by the ${TEAMS[recv].name}!`); return; }
   else if(c.k==="tb"){ own=25; txt=`Touchback. ${TEAMS[recv].name} start at their 25.`; }
-  else { own=c.y; txt=`${own>=36?"Big return! ":""}${TEAMS[recv].name} start at their ${own}.`; }
+  else { s.poss=recv; s.phase="play"; s.down=1; s.toGo=10; s.ball=ownToAbs(recv,0);
+    s.follow={kind:"KR",team:recv,pk:"KO",los:ownToAbs(recv,0)}; s.last.wait=true;
+    s.last.txt=`Kicked deep and returnable! ${TEAMS[recv].name} roll the return.`; addLog(s,kick,s.last.txt); return; }
   startPossession(s,recv,own); s.phase="play"; s.last.txt=txt; addLog(s,recv,txt);
 }
 function applyPAT(s,kind,dice,pk,dk){
@@ -606,14 +629,14 @@ function resolvePending(s){
   const dice=Object.assign({d1:1,d2:1},P.od||{},P.dd||{});
   const used={call:[],roll:[]};
   const tempo=P.tempo||"normal";
-  if(s.phase==="kickoff"){ s.running=false; applyKickoff(s,dice,P.onside); const tb=/Touchback|TOUCHDOWN|nside/.test(s.last.txt); runClock(s,"KO",tempo,tb); }
+  if(s.phase==="kickoff"){ s.running=false; applyKickoff(s,dice,P.onside); if(s.follow){ s.follow.tempo=tempo; s.follow.used=[]; s.pend={}; s.seq=(s.seq||0)+1; return; } const tb=/Touchback|TOUCHDOWN|nside/.test(s.last.txt); runClock(s,"KO",tempo,tb); }
   else if(s.phase==="pat"){
     const off=s.poss;
     if(P.pat==="XP"){ applyPAT(s,"XP",dice); used.call.push(off); used.roll.push(off); }
     else { applyPAT(s,"2PT",dice,P.oc,P.dc); used.call.push(off,other(off)); used.roll.push(off,other(off)); s.last.dice=dice; s.last.D=dice.d1+dice.d2; }
   } else {
     const off=s.poss, def=other(off);
-    if(P.oc==="PUNT"){ applyPunt(s,dice); used.call.push(off); runClock(s,"PUNT",tempo,true); }
+    if(P.oc==="PUNT"){ applyPunt(s,dice); used.call.push(off); if(s.follow){ s.follow.tempo=tempo; s.follow.used=used.call.slice(); s.pend={}; s.seq=(s.seq||0)+1; return; } runClock(s,"PUNT",tempo,true); }
     else if(P.oc==="FG"){ applyFG(s,dice); used.call.push(off); runClock(s,"FG",tempo,true); }
     else if(P.oc==="SPIKE"||P.oc==="KNEEL"){ applySpecial(s,P.oc); used.call.push(off); runClock(s,P.oc,tempo,P.oc==="SPIKE"); }
     else { applyScrimmage(s,P.oc,P.dc,dice); used.call.push(off,def); if(s.last.pk&&PLAYS[s.last.pk]) s.last.tempo=tempo;
@@ -830,11 +853,11 @@ function boxCls(c){ if(!c) return "inc";
   if(c.k==="inc") return "inc";
   if(c.k==="pen") return "yel";
   if(c.k==="b"||c.k==="td") return "brk";
-  if(c.k==="tb"||c.k==="ok"||c.k==="keep"||c.k==="ret") return "blk";
+  if(c.k==="tb"||c.k==="ok"||c.k==="keep"||c.k==="ret"||c.k==="kret") return "blk"; if(c.k==="fc") return "wht";
   return "red"; }
 function miniBox(c){ return `<span class="mini ${boxCls(c)}">${esc(c&&c.k==="keep"?"KEEP":c&&c.k==="lost"?"LOST":boxTxt(c))}</span>`; }
-const FOLNAME={QT:"Quarterback trapped",B:"Breakaway",FUM:"Fumble recovery",INT:"Interception return"};
-const FOLCOL={QT:"QT column",B:"Breakaway column",FUM:"Fumble line",INT:"Interception Return column"};
+const FOLNAME={KR:"Kickoff return",PR:"Punt return",QT:"Quarterback trapped",B:"Breakaway",FUM:"Fumble recovery",INT:"Interception return"};
+const FOLCOL={KR:"Kickoff Return column",PR:"Punt Return column",QT:"QT column",B:"Breakaway column",FUM:"Fumble line",INT:"Interception Return column"};
 function lookupLine(l){
   if(!l||l.R==null) return "";
   let h="";
@@ -920,7 +943,7 @@ function actionCard(n,asAdmin){
     const ready=keys.every(k=>md[k]);
     const face=(k,label,cls,map,mul)=>`<label><span><span class="die ${cls} sm"></span> ${label}</span><span class="faces">${[1,2,3,4,5,6].map(v=>`<button data-act="face" data-k="${k}" data-v="${v}" class="${md[k]===v?"on":""}" aria-label="${label} face ${v}">${v}<small>=${map[v-1]*(mul||1)}</small></button>`).join("")}</span></label>`;
     const what=fol?FOLNAME[n.fol].toLowerCase()+" roll":s.phase==="kickoff"?"kickoff":S.pend.oc==="PUNT"?"punt":S.pend.oc==="FG"?"field goal":S.pend.pat==="XP"?"extra point":off?"offense":"defense";
-    const folNote=fol?`<div class="small">${n.fol==="QT"?"The pass rush got there. Roll to see what the quarterback does (QT column).":n.fol==="B"?"He's loose! Roll to see how far he goes (Breakaway column).":n.fol==="FUM"?"Ball's on the ground! Roll the fumble line: 10–28 you keep it.":"Picked off! Roll your Interception Return column."}</div>`:"";
+    const folNote=fol?`<div class="small">${n.fol==="KR"?"The kick is coming down. Roll your Kickoff Return column to see where you start.":n.fol==="PR"?"The punt is coming down. Roll your Punt Return column: fair catch, a return, or a muff.":n.fol==="QT"?"The pass rush got there. Roll to see what the quarterback does (QT column).":n.fol==="B"?"He's loose! Roll to see how far he goes (Breakaway column).":n.fol==="FUM"?"Ball's on the ground! Roll the fumble line: 10–28 you keep it.":"Picked off! Roll your Interception Return column."}</div>`:"";
     const manual=ui.manual?`<div class="manual">${off?face("t","Black die","blk",BLACK,10)+face("a","White die","wht",WHITE)+face("b","Blue die","blu",BLUE):face("d1","Red die","red",RED)+face("d2","Green die","grn",GREEN)}</div>
       <button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side,onside:isKO&&!!ui.onside,dice:Object.fromEntries(keys.map(k=>[k,md[k]||0]))}))}' ${ready?"":"disabled"}>Submit my dice</button>`:
       `<button class="btn primary big" data-act="send" data-a='${esc(JSON.stringify({type:"roll",side:n.side,onside:isKO&&!!ui.onside}))}'>🎲 ${isKO&&ui.onside?"Onside kick: roll":"Roll"} ${off?"black, white & blue":"red & green"}</button>`;
@@ -974,7 +997,7 @@ function offChart(team,hl){
   </tbody></table></div>`;
 }
 function stChart(team,hl){
-  const cols=[["KR","Kickoff return"],["PU","Punt (net)"],["FG","Field goal (good up to)"],["XP","Extra point"],["IR","Interception return"],["FM","Fumble recovery"]];
+  const cols=[["KO","Kickoff (kicker rolls)"],["KR","Kick return (receiver rolls)"],["PU","Punt (kicker rolls)"],["PR","Punt return (receiver rolls)"],["FG","Field goal (good up to)"],["XP","Extra point"],["IR","Interception return"],["FM","Fumble recovery"]];
   const cellOf=(k,R)=>k==="FM"?{k:FUMKEEP(R)?"keep":"lost"}:CHART[team][k][R];
   return `<div class="pd"><table><thead><tr><th class="rk">Roll</th>${cols.map(([k,n])=>`<th>${n}</th>`).join("")}</tr></thead><tbody>
   ${ROLLS.map(R=>`<tr class="${R%10===0?"dec":""}"><th class="rk">${R}</th>${cols.map(([k])=>boxTD(cellOf(k,R),false)).join("")}</tr>`).join("")}</tbody></table></div>`;
@@ -1024,7 +1047,8 @@ function howToRead(){
     <li>5. Two plain numbers: <b>add them</b>.</li></ul></li>
    <li><b>Follow-up rolls.</b> QT → offense rolls again on its QT column (sack, throw-away, scramble or strip-sack). B → offense rolls on its Breakaway column. INT → the defense rolls on its Interception Return column. F → the team that fumbled rolls the fumble line (KEEP on 10–28, LOST on 29–39; 37–39 is returned, 39 all the way).</li>
    <li><b>Flags.</b> OFF = against the offense, DEF/PI = against the defense. * = automatic first down. The app rolls the offense dice again to see what the play itself did, and the team that was fouled takes whichever is better (accept or decline). A flag never goes more than half the distance to the goal.</li>
-   <li><b>Kickoffs.</b> Roll on the receiving team's return column. The kicking team can try an <b>onside kick</b> instead: 36–39 recovers.</li>
+   <li><b>Kickoffs and punts take two rolls, one per team.</b> The kicking team rolls its Kickoff column (touchback or returnable) or its Punt column (how far; 10 = blocked). Then the receiving team rolls its Kick Return or Punt Return column: where they start, a fair catch, a big return, or a fumble (10). The kicking team can try an <b>onside kick</b> instead: 36–39 recovers.</li>
+   <li><b>Field goals and extra points.</b> Only the kicking team rolls, like the board game. 10 is blocked.</li>
    <li><b>Overtime.</b> NFL playoff rules: both teams get the ball at least once, then next score wins.</li></ol></div>
    <div class="panel"><h2>Where the numbers come from</h2><p class="small">Each column was built to match the team's real 2022 season: Chiefs 66.8% completions, 8.1 yards per pass, 1.8% interceptions, 3.8% sacked, 4.7 per carry. Eagles 65.3%, 8.1, 1.7%, 7.6% sacked, 4.6 per carry. Where each kind of box sits comes from 30 real 1983 Paydirt team charts: on every play and roll we counted how often those charts put an incomplete, QT, flag, interception, fumble or breakaway there, and put ours in the same spots. That is why passes have long black runs of incompletes in the 30s, Long Pass most of all, and why flags gather on 19, 29 and 39 and the rare 10s. The yard boxes then rise smoothly: the common 30s and 20s hold everyday gains, the rare 10s the extremes.</p></div>`;
 }
